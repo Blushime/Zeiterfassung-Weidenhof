@@ -17,6 +17,11 @@
     <p><a class="btn" href="{{ url_for('main.urlaub') }}">Urlaub beantragen</a></p>
   </div>
   <div class="card">
+    <h2>Monatsbericht</h2>
+    <p class="muted">Dein Bericht für {{ period.name }} als PDF (Buchungen, Zeitkonto, Abwesenheiten, Urlaub).</p>
+    <p><a class="btn primary" href="{{ url_for('main.report', jahr=period.jahr, monat=period.monat) }}">&#128196; PDF herunterladen</a></p>
+  </div>
+  <div class="card">
     <h2>Jetzt erfassen</h2>
     {% if running %}
       <p>Laufende Buchung seit <strong>{{ running.start.strftime('%d.%m.%Y %H:%M') }}</strong>

@@ -11,6 +11,7 @@
 
 <div class="card">
   <h2>Manuelle Buchung</h2>
+  {% if perm_manual %}
   <form method="post" class="inline-form">
     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
     <label>Datum <input type="date" name="datum" required></label>
@@ -20,7 +21,12 @@
     <label>Bemerkung <input type="text" name="bemerkung"></label>
     <button type="submit" class="btn primary">Speichern</button>
   </form>
+  {% else %}
+  <p class="muted">Manuelle Buchungen sind aktuell deaktiviert (Berechtigung vom Admin nicht freigeschaltet).</p>
+  {% endif %}
 </div>
+
+<p><a class="btn primary" href="{{ url_for('main.report', jahr=jahr, monat=monat) }}">&#128196; Monatsbericht als PDF</a></p>
 
 <table>
   <thead><tr><th>Datum</th><th>Von</th><th>Bis</th><th>Dauer</th><th>Kategorie</th><th>Quelle</th><th>Bemerkung</th><th></th></tr></thead>
@@ -41,14 +47,29 @@
           <button class="btn small danger">Stop</button>
         </form>
         {% endif %}
+        {% if perm_edit %}
+        <a class="btn small" href="{{ url_for('main.edit_entry', entry_id=en.id) }}">Bearbeiten</a>
         <form method="post" action="{{ url_for('main.delete_entry', entry_id=en.id) }}" style="display:inline" onsubmit="return confirm('Buchung löschen?')">
           <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
           <button class="btn small">Löschen</button>
         </form>
+        {% endif %}
       </td>
     </tr>
   {% else %}
     <tr><td colspan="8" class="muted">Keine Buchungen in diesem Zeitraum.</td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+
+<h2>Abwesenheiten ({{ period.name }})</h2>
+<table>
+  <thead><tr><th>Datum</th><th>Typ</th><th>Quelle</th><th>Bemerkung</th></tr></thead>
+  <tbody>
+  {% for a in absenzen %}
+    <tr><td>{{ a.datum.strftime('%d.%m.%Y') }}</td><td>{{ a.typ }}</td><td>{{ a.quelle }}</td><td>{{ a.bemerkung or '' }}</td></tr>
+  {% else %}
+    <tr><td colspan="4" class="muted">Keine Abwesenheiten in diesem Zeitraum.</td></tr>
   {% endfor %}
   </tbody>
 </table>

@@ -143,6 +143,30 @@ class Urlaubsantrag(db.Model):
     genehmiger = db.relationship("User", foreign_keys=[genehmigt_von])
 
 
+class Abwesenheit(db.Model):
+    """Abwesenheit aus der Stempeluhr (z. B. Urlaub, Krank) — eigener Eintrag, keine Zeitbuchung."""
+
+    __tablename__ = "absenzen"
+
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False)
+    datum = db.Column(db.Date, nullable=False, index=True)
+    typ = db.Column(db.String(40), nullable=False, default="Sonstiges")  # z. B. Urlaub, Krank
+    bemerkung = db.Column(db.Text, nullable=True)
+    quelle = db.Column(db.String(20), nullable=False, default="stempeluhr")
+    import_id = db.Column(db.Integer, db.ForeignKey("import_batches.id"), nullable=True)
+    created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+
+    user = db.relationship("User", backref=db.backref("absenzen", lazy="dynamic"))
+
+    __table_args__ = (
+        db.UniqueConstraint("user_id", "datum", "quelle", "typ", name="uq_absenz"),
+    )
+
+    def __repr__(self):
+        return f"<Abwesenheit {self.user_id} {self.datum} {self.typ}>"
+
+
 class Setting(db.Model):
     __tablename__ = "settings"
 

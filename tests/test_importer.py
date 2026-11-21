@@ -2,7 +2,7 @@ import openpyxl
 
 from app.extensions import db
 from app.importers import import_stempeluhr_xlsx
-from app.models import TimeEntry
+from app.models import Abwesenheit, TimeEntry
 
 HEADER = [
     "Vorname", "Nachname", "Datum", "Hinein", "In Origin", "Hinaus", "Out Origin",
@@ -47,7 +47,7 @@ def test_import_stempeluhr(app, admin_user, worker, tmp_path):
         batch = import_stempeluhr_xlsx(str(path), admin_user, filename=path.name)
         assert batch.zeilen == 5
         assert batch.importiert == 3  # 08-12 + 08-12 + 13-17
-        assert batch.abwesenheit == 1
+        assert batch.abwesenheit == 1  # "Urlaub" am 03-09
         assert batch.fehler == 1  # unbekannter Mitarbeiter
         assert batch.doppelt == 0
 
@@ -57,11 +57,17 @@ def test_import_stempeluhr(app, admin_user, worker, tmp_path):
         assert entries[2].kategorie == "Projekt A"
         assert entries[2].origin == "Manuell/Manuell"
 
-        # Erneuter Import derselben Datei -> alles doppelt
+        absenzen = Abwesenheit.query.all()
+        assert len(absenzen) == 1
+        assert absenzen[0].typ == "Urlaub"
+        assert str(absenzen[0].datum) == "2026-09-03"
+
+        # Erneuter Import derselben Datei -> alles doppelt (auch die Abwesenheit)
         batch2 = import_stempeluhr_xlsx(str(path), admin_user, filename=path.name)
         assert batch2.importiert == 0
-        assert batch2.doppelt == 3
+        assert batch2.doppelt == 4  # 3 Buchungen + 1 Abwesenheit
         assert TimeEntry.query.filter_by(quelle="stempeluhr").count() == 3
+        assert Abwesenheit.query.count() == 1
 
 
 def test_import_gesperrter_zeitraum(app, admin_user, worker, tmp_path):
@@ -76,5 +82,7 @@ def test_import_gesperrter_zeitraum(app, admin_user, worker, tmp_path):
     with app.app_context():
         batch = import_stempeluhr_xlsx(str(path), admin_user, filename=path.name)
         assert batch.importiert == 0
-        assert batch.fehler == 4  # 3 Buchungen gesperrt + 1 unbekannter Mitarbeiter
+        # 3 Buchungen gesperrt + 1 Abwesenheit gesperrt + 1 unbekannter Mitarbeiter
+        assert batch.fehler == 5
         assert TimeEntry.query.count() == 0
+        assert Abwesenheit.query.count() == 0

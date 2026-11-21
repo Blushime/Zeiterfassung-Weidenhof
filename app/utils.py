@@ -2,7 +2,35 @@ from calendar import monthrange
 from datetime import date, datetime, timedelta
 
 from .extensions import db
-from .models import Abrechnungszeitraum, TimeEntry, Urlaubsantrag
+from .models import Abrechnungszeitraum, Setting, TimeEntry, Urlaubsantrag
+
+# Admin-seitig schaltbare Berechtigungen (Settings-Schlüssel: perm_<name> = "1"/"0")
+PERMISSIONS = {
+    "timer": "Start/Stopp-Timer erlauben",
+    "manual": "Manuelle Buchungen erlauben",
+    "edit": "Zeitpassung erlauben (eigene Buchungen bearbeiten/löschen)",
+}
+
+
+def get_setting(key, default=None):
+    s = Setting.query.filter_by(key=key).first()
+    return s.value if s and s.value not in (None, "") else default
+
+
+def set_setting(key, value):
+    s = Setting.query.filter_by(key=key).first()
+    if s is None:
+        s = Setting(key=key)
+        db.session.add(s)
+    s.value = value
+    return s
+
+
+def permission_enabled(name, default=True):
+    """Prüft, ob eine Berechtigung (z. B. 'timer', 'manual', 'edit') aktiviert ist."""
+    if name not in PERMISSIONS:
+        return default
+    return get_setting(f"perm_{name}", "1" if default else "0") == "1"
 
 
 def parse_datum(value):

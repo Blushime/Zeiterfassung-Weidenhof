@@ -14,8 +14,8 @@ from datetime import datetime, timedelta
 import openpyxl
 
 from .extensions import db
-from .models import ImportBatch, TimeEntry, User
-from .utils import get_or_create_period, parse_datum, parse_hhmm, parse_time
+from .models import Abwesenheit, ImportBatch, TimeEntry, User
+from .utils import get_or_create_period, parse_datum, parse_hhmm, parse_time, period_for
 
 COLUMN_ALIASES = {
     "vorname": ["vorname", "firstname"],
@@ -111,27 +111,6 @@ def import_stempeluhr_xlsx(path, hochgeladen_von_id, filename=None):
             abw = cell(row, "abwesenheit")
             abw_text = str(abw).strip() if abw is not None else ""
 
-            if hinein is None and hinaus is None:
-                if abw_text and abw_text not in ("00:00", "0:00"):
-                    counts["abwesenheit"] += 1
-                    log.append({
-                        "zeile": lineno,
-                        "status": "abwesenheit",
-                        "datum": d.isoformat(),
-                        "meldung": abw_text,
-                    })
-                continue  # kein Dienst an diesem Tag
-
-            if hinein is None or hinaus is None:
-                counts["fehler"] += 1
-                log.append({
-                    "zeile": lineno,
-                    "status": "fehler",
-                    "datum": d.isoformat(),
-                    "meldung": "Nur Kommen ODER Gehen gebucht — Zeile übersprungen.",
-                })
-                continue
-
             pn = cell(row, "zweite_mitarbeiternr") or cell(row, "mitarbeiternummer")
             user = _find_user(current["vorname"], current["nachname"], pn)
             if user is None:
@@ -141,6 +120,62 @@ def import_stempeluhr_xlsx(path, hochgeladen_von_id, filename=None):
                     "status": "fehler",
                     "datum": d.isoformat(),
                     "meldung": f"Kein Mitarbeiter gefunden ({current['vorname']} {current['nachname']}, Nr. {pn!r}).",
+                })
+                continue
+
+            if hinein is None and hinaus is None:
+                # Kein Dienst — ggf. Abwesenheit (Urlaub/Krank/...) als eigener Eintrag speichern
+                if abw_text and abw_text not in ("00:00", "0:00"):
+                    p = period_for(d.year, d.month)
+                    if p and p.gesperrt:
+                        counts["fehler"] += 1
+                        log.append({
+                            "zeile": lineno,
+                            "status": "fehler",
+                            "mitarbeiter": user.name,
+                            "datum": d.isoformat(),
+                            "meldung": f"Zeitraum {p.name} ist gesperrt — Abwesenheit nicht übernommen.",
+                        })
+                        continue
+                    typ = abw_text[:40]
+                    exists = Abwesenheit.query.filter_by(
+                        user_id=user.id, datum=d, quelle="stempeluhr", typ=typ
+                    ).first()
+                    if exists:
+                        counts["doppelt"] += 1
+                        log.append({
+                            "zeile": lineno,
+                            "status": "doppelt",
+                            "mitarbeiter": user.name,
+                            "datum": d.isoformat(),
+                            "meldung": f"Abwesenheit '{typ}' bereits importiert.",
+                        })
+                    else:
+                        db.session.add(Abwesenheit(
+                            user_id=user.id,
+                            datum=d,
+                            typ=typ,
+                            bemerkung=str(cell(row, "remarks") or "").strip() or None,
+                            quelle="stempeluhr",
+                            import_id=batch.id,
+                        ))
+                        counts["abwesenheit"] += 1
+                        log.append({
+                            "zeile": lineno,
+                            "status": "abwesenheit",
+                            "mitarbeiter": user.name,
+                            "datum": d.isoformat(),
+                            "meldung": typ,
+                        })
+                continue  # kein Dienst an diesem Tag
+
+            if hinein is None or hinaus is None:
+                counts["fehler"] += 1
+                log.append({
+                    "zeile": lineno,
+                    "status": "fehler",
+                    "datum": d.isoformat(),
+                    "meldung": "Nur Kommen ODER Gehen gebucht — Zeile übersprungen.",
                 })
                 continue
 

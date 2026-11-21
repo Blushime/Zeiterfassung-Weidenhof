@@ -10,13 +10,8 @@ import io
 import json
 from collections import defaultdict
 
-from .models import Setting, TimeEntry, User
-from .utils import period_bounds
-
-
-def get_setting(key, default=None):
-    s = Setting.query.filter_by(key=key).first()
-    return s.value if s and s.value not in (None, "") else default
+from .models import TimeEntry, User
+from .utils import get_setting, period_bounds
 
 
 def lohnarten_mapping():

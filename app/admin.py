@@ -21,8 +21,19 @@ from .datev import export_datev_unternehmen_online, export_entries_csv
 from .decorators import admin_required, chef_required
 from .extensions import db
 from .importers import import_stempeluhr_xlsx
-from .models import Abrechnungszeitraum, ImportBatch, Setting, TimeEntry, Urlaubsantrag, User
-from .utils import fmt_hhmm, get_or_create_period, period_bounds, period_for
+from .models import Abwesenheit, Abrechnungszeitraum, ImportBatch, Setting, TimeEntry, Urlaubsantrag, User
+from .report import build_monthly_pdf
+from .utils import (
+    PERMISSIONS,
+    entries_in_period,
+    fmt_hhmm,
+    get_or_create_period,
+    ist_minuten,
+    period_bounds,
+    period_for,
+    soll_minuten,
+    urlaubskonto,
+)
 
 bp = Blueprint("admin", __name__)
 
@@ -355,9 +366,85 @@ def export_entries():
     )
 
 
-# ---------- Einstellungen (DATEV etc.) ----------
+# ---------- Abwesenheiten (aus Stempeluhr) ----------
 
-SETTING_KEYS = ["datev_mandant", "datev_lohnart_default", "lohnarten_mapping"]
+@bp.route("/absenzen")
+@login_required
+@chef_required
+def absenzen():
+    now = datetime.now()
+    user_id = request.args.get("user_id", type=int)
+    jahr = request.args.get("jahr", type=int) or now.year
+    monat = request.args.get("monat", type=int) or now.month
+    period = period_for(jahr, monat) or get_or_create_period(datetime(jahr, monat, 1))
+    s, e = period_bounds(period)
+    q = Abwesenheit.query.filter(Abwesenheit.datum >= s.date(), Abwesenheit.datum < e.date())
+    if user_id:
+        q = q.filter_by(user_id=user_id)
+    items = q.order_by(Abwesenheit.datum.desc()).all()
+    users = User.query.order_by(User.name).all()
+    return render_template(
+        "admin/absenzen.html",
+        absenzen=items,
+        users=users,
+        user_id=user_id,
+        period=period,
+        jahr=jahr,
+        monat=monat,
+    )
+
+
+# ---------- PDF-Monatsbericht (beliebiger Mitarbeiter) ----------
+
+@bp.route("/report")
+@login_required
+@chef_required
+def report():
+    user_id = request.args.get("user_id", type=int)
+    if not user_id:
+        flash("Bitte Mitarbeiter wählen (z. B. über die Mitarbeiterliste).", "danger")
+        return redirect(url_for("admin.users"))
+    user = db.session.get(User, user_id)
+    if user is None:
+        abort(404)
+    now = datetime.now()
+    jahr = request.args.get("jahr", type=int) or now.year
+    monat = request.args.get("monat", type=int) or now.month
+    period = period_for(jahr, monat) or get_or_create_period(datetime(jahr, monat, 1))
+    entries = entries_in_period(user.id, period)
+    s, e = period_bounds(period)
+    absenzen = (
+        Abwesenheit.query.filter(
+            Abwesenheit.user_id == user.id, Abwesenheit.datum >= s.date(), Abwesenheit.datum < e.date()
+        )
+        .order_by(Abwesenheit.datum)
+        .all()
+    )
+    ist = ist_minuten(user.id, period)
+    soll = soll_minuten(user, period)
+    konto = urlaubskonto(user, jahr)
+    pdf = build_monthly_pdf(user, period, entries, absenzen, ist, soll, ist - soll, konto)
+    fname = f"monatsbericht_{user.personalnummer or user.id}_{jahr}{monat:02d}.pdf"
+    return Response(
+        pdf,
+        mimetype="application/pdf",
+        headers={"Content-Disposition": f"attachment; filename={fname}"},
+    )
+
+
+# ---------- Einstellungen (DATEV, SMTP, Berechtigungen) ----------
+
+SETTING_KEYS = [
+    "datev_mandant",
+    "datev_lohnart_default",
+    "lohnarten_mapping",
+    "smtp_host",
+    "smtp_port",
+    "smtp_user",
+    "smtp_password",
+    "smtp_from",
+    "smtp_tls",
+] + [f"perm_{k}" for k in PERMISSIONS]
 
 
 @bp.route("/settings", methods=["GET", "POST"])
@@ -379,4 +466,4 @@ def settings():
     for k in SETTING_KEYS:
         s = Setting.query.filter_by(key=k).first()
         values[k] = s.value if s and s.value else ""
-    return render_template("admin/settings.html", values=values)
+    return render_template("admin/settings.html", values=values, permissions=PERMISSIONS)

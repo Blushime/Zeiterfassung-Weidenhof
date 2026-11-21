@@ -18,6 +18,7 @@
       <td>{{ 'aktiv' if u.aktiv else 'inaktiv' }}</td>
       <td>
         <a class="btn small" href="{{ url_for('admin.user_edit', user_id=u.id) }}">Bearbeiten</a>
+        <a class="btn small" href="{{ url_for('admin.report', user_id=u.id) }}" title="Monatsbericht (aktueller Monat) als PDF">&#128196; PDF</a>
         <form method="post" action="{{ url_for('admin.user_toggle', user_id=u.id) }}" style="display:inline">
           <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
           <button class="btn small">{{ 'Deaktivieren' if u.aktiv else 'Aktivieren' }}</button>
