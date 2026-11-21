@@ -32,7 +32,7 @@ def permission_required(name):
     def deco(view):
         @wraps(view)
         def wrapped(*args, **kwargs):
-            if not (current_user.is_authenticated and permission_enabled(name)):
+            if not (current_user.is_authenticated and permission_enabled(name, current_user)):
                 flash("Diese Funktion ist aktuell deaktiviert (Berechtigung nicht freigeschaltet).", "warning")
                 return redirect(url_for("main.dashboard"))
             return view(*args, **kwargs)

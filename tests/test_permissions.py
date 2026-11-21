@@ -1,5 +1,5 @@
 from app.extensions import db
-from app.models import Setting, TimeEntry
+from app.models import Setting, TimeEntry, User
 
 
 def _set_perm(app, name, on):
@@ -63,3 +63,44 @@ def test_edit_and_delete_blocked_when_disabled(client, worker, app):
         en = TimeEntry.query.first()
         assert en.dauer_minuten == 120
         assert en.bemerkung == "korrigiert"
+
+
+def _set_override(app, user_id, overrides_json):
+    with app.app_context():
+        u = db.session.get(User, user_id)
+        u.perm_overrides = overrides_json
+        db.session.commit()
+
+
+def test_user_override_allows_despite_global_off(client, worker, app):
+    """Global 'manual' AUS, aber Override AN für diesen Mitarbeiter -> erlaubt."""
+    _set_perm(app, "manual", False)
+    _set_override(app, worker, '{"manual": "1"}')
+    client.post("/login", data={"email": "max@test.de", "password": "pw"})
+    client.post("/entries?jahr=2026&monat=9", data={
+        "datum": "2026-09-01", "von": "08:00", "bis": "09:00", "kategorie": "Allgemein",
+    })
+    with app.app_context():
+        assert TimeEntry.query.count() == 1
+
+
+def test_user_override_blocks_despite_global_on(client, worker, app):
+    """Global 'manual' AN, aber Override AUS für diesen Mitarbeiter -> blockiert."""
+    _set_perm(app, "manual", True)
+    _set_override(app, worker, '{"manual": "0"}')
+    client.post("/login", data={"email": "max@test.de", "password": "pw"})
+    client.post("/entries?jahr=2026&monat=9", data={
+        "datum": "2026-09-01", "von": "08:00", "bis": "09:00", "kategorie": "Allgemein",
+    }, follow_redirects=True)
+    with app.app_context():
+        assert TimeEntry.query.count() == 0
+
+
+def test_user_override_timer(client, worker, app):
+    """Override 'timer' AUS sperrt Start/Stopp trotz global AN."""
+    _set_perm(app, "timer", True)
+    _set_override(app, worker, '{"timer": "0"}')
+    client.post("/login", data={"email": "max@test.de", "password": "pw"})
+    client.post("/start", follow_redirects=True)
+    with app.app_context():
+        assert TimeEntry.query.filter_by(ende=None).count() == 0

@@ -20,7 +20,9 @@ Team-Zeiterfassung (Web-App) mit **Urlaubsverwaltung**, **Stempeluhr-Excel-Impor
 - **Monatsbericht als PDF**: Mitarbeiter laden ihren eigenen Bericht (Buchungen, Zeitkonto, Abwesenheiten, Urlaubskonto)
   unter `/report` herunter; Admin/Chef kann Berichte beliebiger Mitarbeiter erzeugen (Mitarbeiterliste → PDF-Symbol)
 - **Berechtigungen**: Admin kann unter Einstellungen pro Funktion schalten: **Start/Stopp-Timer**, **manuelle Buchungen**,
-  **Zeitpassung** (eigene Buchungen bearbeiten/löschen) — deaktivierte Funktionen sind für Mitarbeiter gesperrt
+  **Zeitpassung** (eigene Buchungen bearbeiten/löschen) — deaktivierte Funktionen sind für Mitarbeiter gesperrt.
+  Zusätzlich **pro Mitarbeiter** überschreibbar (Mitarbeiter-Formular: „Standard / erlaubt / verboten“ je Berechtigung;
+  Vorrang: Mitarbeiter-Override > globale Einstellung)
 - **DATEV-Export**: Bewegungsdaten (Lohnarten) für **DATEV Unternehmen online** als Semikolon-CSV
   (`Personalnummer;Abrechnungsmonat;Lohnart;Stunden`, Dezimalkomma), aggregiert pro Personalnummer + Lohnart.
   Lohnarten-Mapping konfigurierbar in den Admin-Einstellungen — **Feldfolge bitte mit dem Steuerberater abstimmen**

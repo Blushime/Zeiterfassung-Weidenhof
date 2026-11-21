@@ -21,6 +21,8 @@ class User(UserMixin, db.Model):
     urlaubsanspruch_tage = db.Column(db.Float, nullable=False, default=30.0)
     soll_wochenstunden = db.Column(db.Float, nullable=False, default=40.0)
     aktiv = db.Column(db.Boolean, nullable=False, default=True)
+    # JSON-Overrides für Berechtigungen, z. B. {"timer": "0", "manual": "1"} — leer = globale Einstellung
+    perm_overrides = db.Column(db.Text, nullable=True)
     created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
 
     def set_password(self, password):

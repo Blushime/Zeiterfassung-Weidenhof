@@ -116,7 +116,7 @@ def entries():
     period = period_for(jahr, monat) or get_or_create_period(datetime(jahr, monat, 1))
 
     if request.method == "POST":
-        if not permission_enabled("manual"):
+        if not permission_enabled("manual", current_user):
             flash("Manuelle Buchungen sind aktuell deaktiviert.", "warning")
             return redirect(url_for("main.entries", jahr=jahr, monat=monat))
         datum_s = request.form.get("datum", "")
@@ -166,8 +166,8 @@ def entries():
         fmt_hhmm=fmt_hhmm,
         jahr=jahr,
         monat=monat,
-        perm_edit=permission_enabled("edit"),
-        perm_manual=permission_enabled("manual"),
+        perm_edit=permission_enabled("edit", current_user),
+        perm_manual=permission_enabled("manual", current_user),
     )
 
 

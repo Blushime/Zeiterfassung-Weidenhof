@@ -4,7 +4,7 @@
 <h1>Mitarbeiter</h1>
 <p><a class="btn primary" href="{{ url_for('admin.user_new') }}">+ Neuer Mitarbeiter</a></p>
 <table>
-  <thead><tr><th>Name</th><th>E-Mail</th><th>Personalnummer (DATEV)</th><th>Rolle</th><th>Abteilung</th><th>Urlaub (Tage)</th><th>Soll h/Woche</th><th>Status</th><th></th></tr></thead>
+  <thead><tr><th>Name</th><th>E-Mail</th><th>Personalnummer (DATEV)</th><th>Rolle</th><th>Abteilung</th><th>Urlaub (Tage)</th><th>Soll h/Woche</th><th>Berechtigungen</th><th>Status</th><th></th></tr></thead>
   <tbody>
   {% for u in users %}
     <tr>
@@ -15,6 +15,7 @@
       <td>{{ u.department or '—' }}</td>
       <td>{{ u.urlaubsanspruch_tage }}</td>
       <td>{{ u.soll_wochenstunden }}</td>
+      <td>{{ perm_summary.get(u.id, 'Standard') }}</td>
       <td>{{ 'aktiv' if u.aktiv else 'inaktiv' }}</td>
       <td>
         <a class="btn small" href="{{ url_for('admin.user_edit', user_id=u.id) }}">Bearbeiten</a>

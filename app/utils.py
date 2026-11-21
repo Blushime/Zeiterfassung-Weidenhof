@@ -1,3 +1,4 @@
+import json
 from calendar import monthrange
 from datetime import date, datetime, timedelta
 
@@ -26,10 +27,29 @@ def set_setting(key, value):
     return s
 
 
-def permission_enabled(name, default=True):
-    """Prüft, ob eine Berechtigung (z. B. 'timer', 'manual', 'edit') aktiviert ist."""
+def user_perm_override(user, name):
+    """Liefert das benutzerspezifische Override ('0'/'1') oder None, wenn keines gesetzt ist."""
+    raw = getattr(user, "perm_overrides", None) if user else None
+    if not raw:
+        return None
+    try:
+        v = json.loads(raw).get(name)
+        return v if v in ("0", "1") else None
+    except Exception:
+        return None
+
+
+def permission_enabled(name, user=None, default=True):
+    """Effektive Berechtigung: User-Override > globale Einstellung > default.
+
+    name z. B. 'timer' (Start/Stopp), 'manual' (manuelle Buchungen), 'edit' (Zeitpassung).
+    """
     if name not in PERMISSIONS:
         return default
+    if user is not None:
+        ov = user_perm_override(user, name)
+        if ov is not None:
+            return ov == "1"
     return get_setting(f"perm_{name}", "1" if default else "0") == "1"
 
 

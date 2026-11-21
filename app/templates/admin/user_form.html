@@ -24,6 +24,15 @@
       <option value="1" {% if not user or user.aktiv %}selected{% endif %}>ja</option>
       <option value="0" {% if user and not user.aktiv %}selected{% endif %}>nein</option>
     </select></label>
+  <h2>Berechtigungen (individuell für diesen Mitarbeiter)</h2>
+  {% for key, label in permissions.items() %}
+  <label>{{ label }} — global aktuell: {{ 'aktiviert' if global_perms[key] else 'deaktiviert' }}
+    <select name="perm_{{ key }}">
+      <option value="" {% if perm_values.get(key, '') == '' %}selected{% endif %}>Standard (globale Einstellung)</option>
+      <option value="1" {% if perm_values.get(key) == '1' %}selected{% endif %}>erlaubt (Override)</option>
+      <option value="0" {% if perm_values.get(key) == '0' %}selected{% endif %}>verboten (Override)</option>
+    </select></label>
+  {% endfor %}
   <button type="submit" class="btn primary">Speichern</button>
   <a class="btn" href="{{ url_for('admin.users') }}">Abbrechen</a>
 </form>

@@ -29,11 +29,26 @@ from .utils import (
     fmt_hhmm,
     get_or_create_period,
     ist_minuten,
+    permission_enabled,
     period_bounds,
     period_for,
     soll_minuten,
     urlaubskonto,
+    user_perm_override,
 )
+
+PERM_SHORT = {"timer": "Timer", "manual": "Manuell", "edit": "Zeitpassung"}
+
+
+def _perm_summary(user):
+    parts = []
+    for k in PERMISSIONS:
+        ov = user_perm_override(user, k)
+        if ov == "1":
+            parts.append(f"{PERM_SHORT.get(k, k)}: an")
+        elif ov == "0":
+            parts.append(f"{PERM_SHORT.get(k, k)}: aus")
+    return ", ".join(parts) if parts else "Standard"
 
 bp = Blueprint("admin", __name__)
 
@@ -52,7 +67,8 @@ def index():
 @admin_required
 def users():
     all_users = User.query.order_by(User.name).all()
-    return render_template("admin/users.html", users=all_users)
+    perm_summary = {u.id: _perm_summary(u) for u in all_users}
+    return render_template("admin/users.html", users=all_users, perm_summary=perm_summary)
 
 
 def _fill_user_from_form(user):
@@ -71,12 +87,25 @@ def _fill_user_from_form(user):
     except ValueError:
         user.soll_wochenstunden = 40.0
     user.aktiv = request.form.get("aktiv") == "1"
+    # Berechtigungs-Overrides pro Mitarbeiter ("" = globale Einstellung aus den Settings)
+    overrides = {}
+    for key in PERMISSIONS:
+        v = (request.form.get(f"perm_{key}") or "").strip()
+        if v in ("0", "1"):
+            overrides[key] = v
+    user.perm_overrides = json.dumps(overrides, ensure_ascii=False) if overrides else None
     pw = request.form.get("password") or ""
     if pw:
         user.set_password(pw)
     elif user.id is None:
         user.set_password(uuid.uuid4().hex)  # Zufalls-Passwort, Admin vergibt später eines
     return user
+
+
+def _perm_form_context(user):
+    perm_values = {k: (user_perm_override(user, k) or "") for k in PERMISSIONS} if user else {}
+    global_perms = {k: permission_enabled(k) for k in PERMISSIONS}
+    return {"permissions": PERMISSIONS, "perm_values": perm_values, "global_perms": global_perms}
 
 
 @bp.route("/users/new", methods=["GET", "POST"])
@@ -93,7 +122,7 @@ def user_new():
         except Exception as e:
             db.session.rollback()
             flash(f"Fehler beim Anlegen: {e}", "danger")
-    return render_template("admin/user_form.html", user=None)
+    return render_template("admin/user_form.html", user=None, **_perm_form_context(None))
 
 
 @bp.route("/users/<int:user_id>/edit", methods=["GET", "POST"])
@@ -112,7 +141,7 @@ def user_edit(user_id):
         except Exception as e:
             db.session.rollback()
             flash(f"Fehler beim Speichern: {e}", "danger")
-    return render_template("admin/user_form.html", user=user)
+    return render_template("admin/user_form.html", user=user, **_perm_form_context(user))
 
 
 @bp.route("/users/<int:user_id>/toggle", methods=["POST"])
