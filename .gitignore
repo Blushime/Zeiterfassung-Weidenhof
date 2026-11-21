@@ -1,0 +1,19 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+
+# Flask / App
+instance/
+uploads/
+*.db
+.env
+
+# Tests
+.pytest_cache/
+.coverage
+
+# OS
+.DS_Store
