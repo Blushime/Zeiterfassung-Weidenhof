@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+{% block title %}Dashboard — Zeiterfassung{% endblock %}
+{% block content %}
+<h1>Hallo {{ current_user.name }}</h1>
+
+<div class="cards">
+  <div class="card">
+    <h2>Zeitkonto {{ period.name }}</h2>
+    <p class="big">{{ fmt_hhmm(ist) }} <span class="muted">Ist</span></p>
+    <p>{{ fmt_hhmm(soll) }} <span class="muted">Soll</span></p>
+    <p class="big {{ 'neg' if saldo < 0 else 'pos' }}">{{ fmt_hhmm(saldo) }} <span class="muted">Saldo / Gleitzeit</span></p>
+  </div>
+  <div class="card">
+    <h2>Urlaub {{ konto.jahr }}</h2>
+    <p class="big">{{ konto.rest }} <span class="muted">Resturlaub (Tage)</span></p>
+    <p>{{ konto.genommen }} genommen von {{ konto.anspruch }} <span class="muted">Tagen</span></p>
+    <p><a class="btn" href="{{ url_for('main.urlaub') }}">Urlaub beantragen</a></p>
+  </div>
+  <div class="card">
+    <h2>Jetzt erfassen</h2>
+    {% if running %}
+      <p>Laufende Buchung seit <strong>{{ running.start.strftime('%d.%m.%Y %H:%M') }}</strong>
+        ({{ running.kategorie }}) — aktuell {{ fmt_hhmm(running.dauer) }}</p>
+      <form method="post" action="{{ url_for('main.stop_entry', entry_id=running.id) }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <button type="submit" class="btn danger">Stoppen</button>
+      </form>
+    {% else %}
+      <form method="post" action="{{ url_for('main.start_timer') }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <label>Kategorie <input type="text" name="kategorie" value="Allgemein"></label>
+        <button type="submit" class="btn primary">Starten</button>
+      </form>
+    {% endif %}
+  </div>
+</div>
+
+<h2>Letzte Buchungen ({{ period.name }})</h2>
+<table>
+  <thead><tr><th>Datum</th><th>Von</th><th>Bis</th><th>Dauer</th><th>Kategorie</th><th>Quelle</th></tr></thead>
+  <tbody>
+  {% for en in entries|reverse %}
+    <tr>
+      <td>{{ en.start.strftime('%d.%m.%Y') }}</td>
+      <td>{{ en.start.strftime('%H:%M') }}</td>
+      <td>{{ en.ende.strftime('%H:%M') if en.ende else 'läuft…' }}</td>
+      <td>{{ fmt_hhmm(en.dauer) }}</td>
+      <td>{{ en.kategorie }}</td>
+      <td>{{ en.quelle }}</td>
+    </tr>
+  {% else %}
+    <tr><td colspan="6" class="muted">Noch keine Buchungen in diesem Zeitraum.</td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+<p><a class="btn" href="{{ url_for('main.entries') }}">Alle Zeiten ansehen / manuell buchen</a></p>
+{% endblock %}

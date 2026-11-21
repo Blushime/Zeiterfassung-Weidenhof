@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block title %}Alle Buchungen — Admin{% endblock %}
+{% block content %}
+<h1>Alle Buchungen — {{ period.name }}</h1>
+<form method="get" class="inline-form card">
+  <label>Mitarbeiter
+    <select name="user_id">
+      <option value="">— alle —</option>
+      {% for u in users %}
+      <option value="{{ u.id }}" {% if user_id == u.id %}selected{% endif %}>{{ u.name }}</option>
+      {% endfor %}
+    </select></label>
+  <label>Jahr <input type="number" name="jahr" value="{{ jahr }}"></label>
+  <label>Monat <input type="number" name="monat" min="1" max="12" value="{{ monat }}"></label>
+  <button type="submit" class="btn">Filtern</button>
+</form>
+<table>
+  <thead><tr><th>Datum</th><th>Mitarbeiter</th><th>Von</th><th>Bis</th><th>Dauer</th><th>Kategorie</th><th>Quelle</th><th>Bemerkung</th></tr></thead>
+  <tbody>
+  {% for en in entries %}
+    <tr>
+      <td>{{ en.start.strftime('%d.%m.%Y') }}</td>
+      <td>{{ en.user.name }}</td>
+      <td>{{ en.start.strftime('%H:%M') }}</td>
+      <td>{{ en.ende.strftime('%H:%M') if en.ende else 'läuft…' }}</td>
+      <td>{{ fmt_hhmm(en.dauer) }}</td>
+      <td>{{ en.kategorie }}</td>
+      <td>{{ en.quelle }}{% if en.origin %} ({{ en.origin }}){% endif %}</td>
+      <td>{{ en.bemerkung or '' }}</td>
+    </tr>
+  {% else %}
+    <tr><td colspan="8" class="muted">Keine Buchungen gefunden.</td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% endblock %}

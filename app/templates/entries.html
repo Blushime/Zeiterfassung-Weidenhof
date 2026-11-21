@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+{% block title %}Meine Zeiten — Zeiterfassung{% endblock %}
+{% block content %}
+<h1>Meine Zeiten — {{ period.name }}</h1>
+
+<p class="muted">Zeitraum wechseln:
+  <a href="{{ url_for('main.entries', jahr=(period.jahr if period.monat > 1 else period.jahr - 1), monat=(period.monat - 1 if period.monat > 1 else 12)) }}">&larr; zurück</a>
+  |
+  <a href="{{ url_for('main.entries', jahr=(period.jahr if period.monat < 12 else period.jahr + 1), monat=(period.monat + 1 if period.monat < 12 else 1)) }}">vor &rarr;</a>
+</p>
+
+<div class="card">
+  <h2>Manuelle Buchung</h2>
+  <form method="post" class="inline-form">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <label>Datum <input type="date" name="datum" required></label>
+    <label>Von <input type="time" name="von" required></label>
+    <label>Bis <input type="time" name="bis" required></label>
+    <label>Kategorie <input type="text" name="kategorie" value="Allgemein"></label>
+    <label>Bemerkung <input type="text" name="bemerkung"></label>
+    <button type="submit" class="btn primary">Speichern</button>
+  </form>
+</div>
+
+<table>
+  <thead><tr><th>Datum</th><th>Von</th><th>Bis</th><th>Dauer</th><th>Kategorie</th><th>Quelle</th><th>Bemerkung</th><th></th></tr></thead>
+  <tbody>
+  {% for en in entries %}
+    <tr>
+      <td>{{ en.start.strftime('%d.%m.%Y') }}</td>
+      <td>{{ en.start.strftime('%H:%M') }}</td>
+      <td>{{ en.ende.strftime('%H:%M') if en.ende else 'läuft…' }}</td>
+      <td>{{ fmt_hhmm(en.dauer) }}</td>
+      <td>{{ en.kategorie }}</td>
+      <td>{{ en.quelle }}{% if en.origin %} ({{ en.origin }}){% endif %}</td>
+      <td>{{ en.bemerkung or '' }}</td>
+      <td>
+        {% if en.laufend %}
+        <form method="post" action="{{ url_for('main.stop_entry', entry_id=en.id) }}" style="display:inline">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <button class="btn small danger">Stop</button>
+        </form>
+        {% endif %}
+        <form method="post" action="{{ url_for('main.delete_entry', entry_id=en.id) }}" style="display:inline" onsubmit="return confirm('Buchung löschen?')">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <button class="btn small">Löschen</button>
+        </form>
+      </td>
+    </tr>
+  {% else %}
+    <tr><td colspan="8" class="muted">Keine Buchungen in diesem Zeitraum.</td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% endblock %}

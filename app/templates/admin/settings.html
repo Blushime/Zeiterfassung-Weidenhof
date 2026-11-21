@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% block title %}Einstellungen — Admin{% endblock %}
+{% block content %}
+<h1>Einstellungen</h1>
+<div class="card">
+  <form method="post">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <label>DATEV-Mandant <input type="text" name="datev_mandant" value="{{ values.datev_mandant }}"></label>
+    <label>DATEV Default-Lohnart <input type="text" name="datev_lohnart_default" value="{{ values.datev_lohnart_default or '1000' }}"></label>
+    <label>Lohnarten-Mapping (JSON, z. B. <code>{"Allgemein": "1000", "Überstunden": "2010"}</code>)
+      <textarea name="lohnarten_mapping" rows="4">{{ values.lohnarten_mapping or '{}' }}</textarea></label>
+    <button type="submit" class="btn primary">Speichern</button>
+  </form>
+</div>
+{% endblock %}

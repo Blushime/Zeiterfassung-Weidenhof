@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% block title %}Urlaub — Zeiterfassung{% endblock %}
+{% block content %}
+<h1>Urlaub</h1>
+
+<div class="card">
+  <h2>Urlaubskonto {{ konto.jahr }}</h2>
+  <p>Anspruch: <strong>{{ konto.anspruch }}</strong> Tage — genommen: <strong>{{ konto.genommen }}</strong> —
+     Rest: <strong>{{ konto.rest }}</strong> Tage</p>
+</div>
+
+<div class="card">
+  <h2>Neuen Antrag stellen</h2>
+  <form method="post" class="inline-form">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <label>Von <input type="date" name="von" required></label>
+    <label>Bis <input type="date" name="bis" required></label>
+    <label>Bemerkung <input type="text" name="bemerkung"></label>
+    <button type="submit" class="btn primary">Antrag stellen</button>
+  </form>
+  <p class="muted">Es werden Arbeitstage (Mo–Fr) gezählt.</p>
+</div>
+
+<h2>Meine Anträge</h2>
+<table>
+  <thead><tr><th>Von</th><th>Bis</th><th>Tage</th><th>Status</th><th>Bemerkung</th><th>Gestellt am</th></tr></thead>
+  <tbody>
+  {% for a in antraege %}
+    <tr>
+      <td>{{ a.von.strftime('%d.%m.%Y') }}</td>
+      <td>{{ a.bis.strftime('%d.%m.%Y') }}</td>
+      <td>{{ a.tage }}</td>
+      <td><span class="badge {{ a.status }}">{{ a.status }}</span></td>
+      <td>{{ a.bemerkung or '' }}</td>
+      <td>{{ a.created_at.strftime('%d.%m.%Y %H:%M') }}</td>
+    </tr>
+  {% else %}
+    <tr><td colspan="6" class="muted">Noch keine Anträge.</td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% endblock %}
