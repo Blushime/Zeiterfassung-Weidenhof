@@ -40,6 +40,10 @@ python3 -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
 
+# Datenbankschema per Migration anlegen (Flask-Migrate/Alembic, migrations/)
+flask --app run.py db upgrade
+# Hinweis: bestehende DB ohne alembic_version einmalig stempeln: flask --app run.py db stamp head
+
 # erstes Admin-Konto anlegen
 flask --app run.py create-admin
 
@@ -48,6 +52,15 @@ flask --app run.py seed-demo
 
 # starten
 python run.py        # http://localhost:5000
+```
+
+## Schema-Änderungen später
+
+Neu modellieren, dann Migration generieren und ausführen — die Daten bleiben erhalten:
+
+```bash
+flask --app run.py db migrate -m "beschreibung der änderung"   # autogenerate
+flask --app run.py db upgrade                                    # ausführen
 ```
 
 ## Produktion (öffentlich mit HTTPS)

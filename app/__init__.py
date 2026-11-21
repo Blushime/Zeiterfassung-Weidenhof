@@ -2,8 +2,8 @@ import os
 
 from flask import Flask
 
-from .config import Config, INSTANCE_DIR
-from .extensions import db, login_manager, csrf
+from .config import BASE_DIR, Config, INSTANCE_DIR
+from .extensions import db, login_manager, csrf, migrate
 from . import models  # noqa: F401  (registriert Models + user_loader)
 
 
@@ -15,6 +15,7 @@ def create_app(config_class=Config):
     os.makedirs(app.config["UPLOAD_FOLDER"], exist_ok=True)
 
     db.init_app(app)
+    migrate.init_app(app, db)
     login_manager.init_app(app)
     csrf.init_app(app)
 
@@ -31,6 +32,8 @@ def create_app(config_class=Config):
     register_cli(app)
 
     with app.app_context():
-        db.create_all()
+        # Schema per Migrationen (migrations/ existiert) — sonst Dev-Fallback create_all
+        if not os.path.isdir(os.path.join(BASE_DIR, "migrations")):
+            db.create_all()
 
     return app
