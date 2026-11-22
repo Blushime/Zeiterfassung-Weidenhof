@@ -172,16 +172,34 @@ def saldo_minuten(user, period) -> int:
     return ist_minuten(user.id, period) - soll_minuten(user, period)
 
 
+def urlaub_modus(user):
+    """'konto' (default) oder 'auszahlung' (Zwölftel der Monatsstunden, belastet nicht das Konto)."""
+    return getattr(user, "urlaub_modus", None) or "konto"
+
+
+def urlaub_stunden(user, tage) -> float:
+    """Urlaubstage -> Stunden (pro Mitarbeiter konfigurierbar, Default 8 h/Tag)."""
+    return round((tage or 0) * (getattr(user, "urlaub_stunden_pro_tag", None) or 8.0), 2)
+
+
+def urlaubauszahlung_stunden(ist_minuten) -> float:
+    """Auszahlungsmodus: Zwölftel der gearbeiteten Monatsstunden."""
+    return round((ist_minuten or 0) / 60 / 12, 2)
+
+
 def urlaubskonto(user, jahr: int) -> dict:
     anspruch = user.urlaubsanspruch_tage
-    genommen = (
-        db.session.query(db.func.sum(Urlaubsantrag.tage))
-        .filter(
-            Urlaubsantrag.user_id == user.id,
-            Urlaubsantrag.status == "genehmigt",
-            db.extract("year", Urlaubsantrag.von) == jahr,
+    if urlaub_modus(user) == "auszahlung":
+        genommen = 0  # Auszahlungsmodus belastet das Urlaubskonto nicht
+    else:
+        genommen = (
+            db.session.query(db.func.sum(Urlaubsantrag.tage))
+            .filter(
+                Urlaubsantrag.user_id == user.id,
+                Urlaubsantrag.status == "genehmigt",
+                db.extract("year", Urlaubsantrag.von) == jahr,
+            )
+            .scalar()
+            or 0
         )
-        .scalar()
-        or 0
-    )
     return {"jahr": jahr, "anspruch": anspruch, "genommen": genommen, "rest": anspruch - genommen}

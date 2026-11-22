@@ -32,7 +32,9 @@ def test_db_upgrade_creates_full_schema(tmp_path):
     ]:
         assert expected in tables, f"Tabelle fehlt nach db upgrade: {expected}"
 
-    # User-Tabelle enthält das perm_overrides-Feld (aus der Initial-Migration)
+    # User-Tabelle enthält die Felder aus den Migrationen
     with app.app_context():
         cols = [c["name"] for c in inspect(db.engine).get_columns("users")]
     assert "perm_overrides" in cols
+    assert "urlaub_modus" in cols
+    assert "urlaub_stunden_pro_tag" in cols

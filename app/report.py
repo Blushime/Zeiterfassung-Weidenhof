@@ -2,7 +2,7 @@
 
 from fpdf import FPDF
 
-from .utils import fmt_hhmm
+from .utils import fmt_hhmm, urlaub_modus, urlaubauszahlung_stunden
 
 
 def _latin1(s):
@@ -64,11 +64,17 @@ def build_monthly_pdf(user, period, entries, absenzen, ist, soll, saldo, urlaubs
         pdf.cell(0, 6, "- keine -", new_x="LMARGIN", new_y="NEXT")
     pdf.ln(3)
 
-    # Urlaubskonto
+    # Urlaub: Modus 'auszahlung' -> Zwölftel der Monatsstunden, Konto wird nicht belastet
     pdf.set_font("helvetica", "B", 12)
-    pdf.cell(0, 8, f"Urlaubskonto {urlaubskonto['jahr']}", new_x="LMARGIN", new_y="NEXT")
+    pdf.cell(0, 8, f"Urlaub {urlaubskonto['jahr']}", new_x="LMARGIN", new_y="NEXT")
     pdf.set_font("helvetica", "", 11)
-    pdf.cell(0, 7, _latin1(f"Anspruch: {urlaubskonto['anspruch']} Tage  |  genommen: {urlaubskonto['genommen']}  |  Rest: {urlaubskonto['rest']}"), new_x="LMARGIN", new_y="NEXT")
+    if urlaub_modus(user) == "auszahlung":
+        payout = urlaubauszahlung_stunden(ist)
+        pdf.cell(0, 7, _latin1(f"Modus: Auszahlung - Zwölftel der Monatsstunden = {payout:.2f} h"), new_x="LMARGIN", new_y="NEXT")
+        pdf.cell(0, 7, _latin1("Urlaubskonto wird in diesem Modus nicht belastet."), new_x="LMARGIN", new_y="NEXT")
+    else:
+        pdf.cell(0, 7, _latin1(f"Anspruch: {urlaubskonto['anspruch']} Tage  |  genommen: {urlaubskonto['genommen']}  |  Rest: {urlaubskonto['rest']}"), new_x="LMARGIN", new_y="NEXT")
+        pdf.cell(0, 7, _latin1(f"Urlaubsstunden pro Tag: {getattr(user, 'urlaub_stunden_pro_tag', 8.0)} h"), new_x="LMARGIN", new_y="NEXT")
 
     pdf.set_font("helvetica", "I", 8)
     pdf.ln(6)

@@ -3,7 +3,7 @@
 {% block content %}
 <h1>Urlaubsanträge (alle)</h1>
 <table>
-  <thead><tr><th>Mitarbeiter</th><th>Von</th><th>Bis</th><th>Tage</th><th>Status</th><th>Bemerkung</th><th>Gestellt am</th><th>Aktionen</th></tr></thead>
+  <thead><tr><th>Mitarbeiter</th><th>Von</th><th>Bis</th><th>Tage</th><th>Stunden</th><th>Status</th><th>Bemerkung</th><th>Gestellt am</th><th>Aktionen</th></tr></thead>
   <tbody>
   {% for a in antraege %}
     <tr>
@@ -11,6 +11,7 @@
       <td>{{ a.von.strftime('%d.%m.%Y') }}</td>
       <td>{{ a.bis.strftime('%d.%m.%Y') }}</td>
       <td>{{ a.tage }}</td>
+      <td>{{ (a.tage * (a.user.urlaub_stunden_pro_tag or 8))|round(1) }} h</td>
       <td><span class="badge {{ a.status }}">{{ a.status }}</span></td>
       <td>{{ a.bemerkung or '' }}</td>
       <td>{{ a.created_at.strftime('%d.%m.%Y %H:%M') }}</td>
@@ -28,7 +29,7 @@
       </td>
     </tr>
   {% else %}
-    <tr><td colspan="8" class="muted">Keine Anträge vorhanden.</td></tr>
+    <tr><td colspan="9" class="muted">Keine Anträge vorhanden.</td></tr>
   {% endfor %}
   </tbody>
 </table>

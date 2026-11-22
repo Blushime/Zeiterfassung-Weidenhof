@@ -82,6 +82,12 @@ def _fill_user_from_form(user):
         user.urlaubsanspruch_tage = float(request.form.get("urlaubsanspruch_tage") or 30)
     except ValueError:
         user.urlaubsanspruch_tage = 30.0
+    modus = request.form.get("urlaub_modus") or "konto"
+    user.urlaub_modus = modus if modus in ("konto", "auszahlung") else "konto"
+    try:
+        user.urlaub_stunden_pro_tag = float(request.form.get("urlaub_stunden_pro_tag") or 8)
+    except ValueError:
+        user.urlaub_stunden_pro_tag = 8.0
     try:
         user.soll_wochenstunden = float(request.form.get("soll_wochenstunden") or 40)
     except ValueError:
@@ -466,6 +472,7 @@ def report():
 SETTING_KEYS = [
     "datev_mandant",
     "datev_lohnart_default",
+    "datev_lohnart_urlaub_auszahlung",
     "lohnarten_mapping",
     "smtp_host",
     "smtp_port",

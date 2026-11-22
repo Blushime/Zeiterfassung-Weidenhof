@@ -21,6 +21,7 @@
     <h2>DATEV — Unternehmen online</h2>
     <label>DATEV-Mandant <input type="text" name="datev_mandant" value="{{ values.datev_mandant }}"></label>
     <label>DATEV Default-Lohnart <input type="text" name="datev_lohnart_default" value="{{ values.datev_lohnart_default or '1000' }}"></label>
+    <label>DATEV Lohnart Urlaubsauszahlung (für Mitarbeiter mit Modus „Auszahlung", = Ist/12) <input type="text" name="datev_lohnart_urlaub_auszahlung" value="{{ values.datev_lohnart_urlaub_auszahlung or '9000' }}"></label>
     <label>Lohnarten-Mapping (JSON, z. B. <code>{"Allgemein": "1000", "Überstunden": "2010"}</code>)
       <textarea name="lohnarten_mapping" rows="4">{{ values.lohnarten_mapping or '{}' }}</textarea></label>
   </div>

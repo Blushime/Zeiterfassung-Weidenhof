@@ -14,7 +14,10 @@ Team-Zeiterfassung (Web-App) mit **Urlaubsverwaltung**, **Stempeluhr-Excel-Impor
   Protokoll pro Zeile (ok / doppelt / Fehler / Abwesenheit)
 - **Urlaub**: Antrag stellen (Arbeitstage Mo–Fr werden automatisch gezählt), Genehmigung/Ablehnung durch Chef,
   Urlaubskonto (Anspruch − genehmigte Tage = Rest); **E-Mail-Benachrichtigung** an alle aktiven Chef/Admin bei neuem Antrag
-  (SMTP konfigurierbar unter Admin → Einstellungen; ohne SMTP-Host stumm deaktiviert)
+  (SMTP konfigurierbar unter Admin → Einstellungen; ohne SMTP-Host stumm deaktiviert).
+  **Pro Mitarbeiter konfigurierbar**: Urlaubsmodus „Konto" (default) oder **„Auszahlung"** (Zwölftel der gearbeiteten
+  Monatsstunden wird als Urlaub ausgezahlt, belastet das Urlaubskonto nicht — erscheint als eigene Lohnart im DATEV-Export,
+  Lohnart konfigurierbar unter Einstellungen) sowie **Urlaubsstunden pro Tag** (default 8 h, Umrechnung Tage↔Stunden in Listen)
 - **Abwesenheiten**: In der Stempeluhr-Datei markierte Tage (Spalte `Abwesenheit`, z. B. Urlaub/Krank) werden als eigene
   Abwesenheitseinträge importiert (mit Duplikatschutz) und in Listen + PDF-Bericht angezeigt
 - **Monatsbericht als PDF**: Mitarbeiter laden ihren eigenen Bericht (Buchungen, Zeitkonto, Abwesenheiten, Urlaubskonto)

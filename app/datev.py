@@ -11,7 +11,7 @@ import json
 from collections import defaultdict
 
 from .models import TimeEntry, User
-from .utils import get_setting, period_bounds
+from .utils import get_setting, period_bounds, urlaub_modus
 
 
 def lohnarten_mapping():
@@ -34,6 +34,7 @@ def export_datev_unternehmen_online(period) -> str:
     users = {u.id: u for u in User.query.all()}
 
     agg = defaultdict(float)  # (personalnummer, lohnart) -> stunden
+    user_ist = defaultdict(float)  # personalnummer -> minuten (für Urlaubsauszahlung)
     for en in entries:
         u = users.get(en.user_id)
         pn = (u.personalnummer or "").strip() if u else ""
@@ -41,11 +42,22 @@ def export_datev_unternehmen_online(period) -> str:
             continue  # ohne Personalnummer nicht an DATEV exportierbar
         lohnart = mapping.get(en.kategorie, default_lohnart)
         agg[(pn, lohnart)] += en.dauer / 60.0
+        user_ist[pn] += en.dauer
+
+    rows = list(agg.items())
+
+    # Urlaubsauszahlung: Mitarbeiter mit Modus 'auszahlung' bekommen das Zwölftel
+    # ihrer gearbeiteten Monatsstunden als eigene Lohnart ausgezahlt.
+    payout_lohnart = get_setting("datev_lohnart_urlaub_auszahlung", "9000")
+    for u in User.query.all():
+        pn = (u.personalnummer or "").strip()
+        if pn and urlaub_modus(u) == "auszahlung" and user_ist.get(pn):
+            rows.append(((pn, payout_lohnart), user_ist[pn] / 60 / 12))
 
     buf = io.StringIO()
     w = csv.writer(buf, delimiter=";", lineterminator="\r\n")
     w.writerow(["Personalnummer", "Abrechnungsmonat", "Lohnart", "Stunden"])
-    for (pn, lohnart), stunden in sorted(agg.items()):
+    for (pn, lohnart), stunden in sorted(rows):
         w.writerow([pn, abrechnungsmonat, lohnart, f"{stunden:.2f}".replace(".", ",")])
     return buf.getvalue()
 

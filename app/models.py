@@ -19,6 +19,9 @@ class User(UserMixin, db.Model):
     personalnummer = db.Column(db.String(32), unique=True, nullable=True)  # DATEV-Personalnummer
     department = db.Column(db.String(80), nullable=True)
     urlaubsanspruch_tage = db.Column(db.Float, nullable=False, default=30.0)
+    # "konto" = Urlaub belastet das Urlaubskonto (Tage); "auszahlung" = Zwölftel der Monatsstunden wird ausgezahlt
+    urlaub_modus = db.Column(db.String(20), nullable=False, default="konto", server_default="konto")
+    urlaub_stunden_pro_tag = db.Column(db.Float, nullable=False, default=8.0, server_default=db.text("8.0"))
     soll_wochenstunden = db.Column(db.Float, nullable=False, default=40.0)
     aktiv = db.Column(db.Boolean, nullable=False, default=True)
     # JSON-Overrides für Berechtigungen, z. B. {"timer": "0", "manual": "1"} — leer = globale Einstellung
