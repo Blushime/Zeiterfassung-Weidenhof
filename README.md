@@ -129,6 +129,46 @@ starke Passwörter, DSGVO-konforme Löschung von Konten auf Wunsch.
   `DATABASE_URL=postgres://...` in `.env` setzen — kein Code-Änderung nötig.
 - `instance/` und `uploads/` liegen in Docker-Volumes (`app-data`, `app-uploads`) und überleben Container-Neustarts.
 
+## Backup-Strategie
+
+**Was wird gesichert** (`scripts/backup-db.sh`):
+- `instance/zeiterfassung.db` — **online & konsistent** (sqlite3-Backup-API, App läuft weiter), danach `PRAGMA integrity_check`, Rechte `600`
+- `uploads/` (hochgeladene Stempeluhr-Excel-Rohdaten) als `uploads_<timestamp>.tar.gz`
+- Ablage: `backups/` lokal (Rotation: letzte 30), **Offsite** via rclone (siehe unten)
+
+**Wie oft:** lokal alle 6 h (Datei ist klein → RPO ≈ 6 h):
+
+```bash
+0 */6 * * * /srv/zeiterfassung/scripts/backup-db.sh >> /var/log/zeiterfassung-backup.log 2>&1
+```
+
+**Offsite: OneDrive (Microsoft 365) via rclone**
+
+```bash
+# einmalig auf dem Server:
+apt install rclone            # oder: curl https://rclone.org/install.sh | sudo bash
+rclone config                 # -> "n" (neu) -> Typ "onedrive" -> im Browser anmelden -> Token wird gespeichert
+rclone listremotes            # prüfen: "onedrive:"
+# in .env eintragen:  BACKUP_REMOTE=onedrive:Zeiterfassung-Backups
+rclone copy /srv/zeiterfassung/backups onedrive:Zeiterfassung-Backups   # erster manueller Test
+```
+
+Danach kopiert `backup-db.sh` jedes neue Backup automatisch in die Cloud (log in `backups/rclone.log`).
+Andere Clouds (Azure Blob, S3, Nextcloud …) funktionieren genauso über das jeweilige rclone-Backend.
+
+**3-2-1-Regel:** 3 Kopien (DB im Volume + lokale Backups + OneDrive), 2 Medien (Server + Cloud), 1 offsite (Cloud) ✅
+
+**Restore testen (wichtig!):** mindestens monatlich auf einem Testsystem:
+
+```bash
+./scripts/restore-db.sh backups/zeiterfassung_<datum>.db
+# -> prüft integrity_check, stoppt die App (docker compose), sichert alte DB als .pre-restore.*, spielt Backup ein, startet neu
+```
+
+**Vor Schema-Migrationen** immer Backup machen (siehe Produktion → Updates).
+
+**Optional härten:** Backups vor dem Cloud-Upload verschlüsseln, z. B. `age` oder `gpg` (Key nur lokal/offline aufbewahren) — wegen personenbezogener Daten + Passwort-Hashes in der DB empfohlen.
+
 ## Stempeluhr-Excel (Format)
 
 Blatt `Zeitbericht`, Kopfzeile in Zeile 1. Relevante Spalten:
