@@ -90,9 +90,16 @@ def _fill_user_from_form(user):
         user.urlaub_stunden_pro_tag = float(request.form.get("urlaub_stunden_pro_tag") or 8)
     except ValueError:
         user.urlaub_stunden_pro_tag = 8.0
-    # Soll-Stunden kommen pro Monat vom Abrechnungszeitraum (Admin) — pro Mitarbeiter nur an/aus
-    # (Minijobber z. B. aus). Legacy-Soll_wochenstunden bleibt als Fallback unangetastet.
+    # Soll-Stunden pro Monat: individuell pro Mitarbeiter (leer = global vom Abrechnungszeitraum)
     user.hat_soll = request.form.get("hat_soll") == "1"
+    raw_soll = (request.form.get("soll_stunden_monat") or "").strip()
+    if raw_soll:
+        try:
+            user.soll_stunden_monat = float(raw_soll.replace(",", "."))
+        except ValueError:
+            user.soll_stunden_monat = None
+    else:
+        user.soll_stunden_monat = None
     user.aktiv = request.form.get("aktiv") == "1"
     # Berechtigungs-Overrides pro Mitarbeiter ("" = globale Einstellung aus den Settings)
     overrides = {}

@@ -52,6 +52,25 @@ def test_fallback_legacy_woechentlich(app, worker):
         assert soll_minuten(u, p) == expected
 
 
+def test_soll_pro_mitarbeiter_schlaegt_zeitraum(app, worker):
+    """Individueller Monats-Soll des Mitarbeiters hat Vorrang vor dem Zeitraum-Soll."""
+    _add_period(app, soll=160.0)  # global 160 h
+    with app.app_context():
+        u = db.session.get(User, worker)
+        u.soll_stunden_monat = 80.0  # Teilzeit: 80 h
+        db.session.commit()
+        db.session.refresh(u)
+        p = Abrechnungszeitraum.query.filter_by(jahr=2026, monat=9).first()
+        assert soll_minuten(u, p) == 80 * 60
+        # anderer Mitarbeiter ohne individuellen Wert -> Zeitraum-Soll
+        from app.models import User as U
+        other = U(email="other@test.de", name="Other", role="mitarbeiter", aktiv=True)
+        other.set_password("x")
+        db.session.add(other)
+        db.session.commit()
+        assert soll_minuten(other, p) == 160 * 60
+
+
 def test_admin_period_edit_soll(client, admin_user, app):
     _add_period(app, soll=None)
     with app.app_context():

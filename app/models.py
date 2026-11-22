@@ -23,6 +23,7 @@ class User(UserMixin, db.Model):
     urlaub_modus = db.Column(db.String(20), nullable=False, default="konto", server_default="konto")
     urlaub_stunden_pro_tag = db.Column(db.Float, nullable=False, default=8.0, server_default=db.text("8.0"))
     soll_wochenstunden = db.Column(db.Float, nullable=False, default=40.0)  # nur Legacy-Fallback
+    soll_stunden_monat = db.Column(db.Float, nullable=True)  # individueller Monats-Soll dieses Mitarbeiters (None = vom Zeitraum)
     hat_soll = db.Column(db.Boolean, nullable=False, default=True, server_default=db.text("1"))  # False = z. B. Minijobber: kein Soll
     aktiv = db.Column(db.Boolean, nullable=False, default=True)
     # JSON-Overrides für Berechtigungen, z. B. {"timer": "0", "manual": "1"} — leer = globale Einstellung

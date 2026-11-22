@@ -4,7 +4,7 @@
 <h1>Stände: {{ user.name }}</h1>
 <p class="muted">
   {{ user.email }} | Personalnummer: {{ user.personalnummer or '—' }} | Rolle: {{ user.role }} |
-  Abteilung: {{ user.department or '—' }} | Soll: {% if user.hat_soll %}{{ period.soll_stunden or '—' }} h/Monat{% else %}kein Soll (Saldo = Ist){% endif %} |
+  Abteilung: {{ user.department or '—' }} | Soll: {% if not user.hat_soll %}kein Soll (Saldo = Ist){% elif user.soll_stunden_monat is not none %}{{ user.soll_stunden_monat }} h/Monat (individuell){% else %}{{ period.soll_stunden or '—' }} h/Monat (vom Zeitraum){% endif %} |
   Urlaubsmodus: {% if urlaub_modus == 'auszahlung' %}Auszahlung (Ist/12){% else %}Konto{% endif %} |
   {{ user.urlaub_stunden_pro_tag }} h/Urlaubstag
 </p>

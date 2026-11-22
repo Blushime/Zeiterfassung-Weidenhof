@@ -4,7 +4,7 @@
 <h1>Mitarbeiter</h1>
 <p><a class="btn primary" href="{{ url_for('admin.user_new') }}">+ Neuer Mitarbeiter</a></p>
 <table>
-  <thead><tr><th>Name</th><th>E-Mail</th><th>Personalnummer (DATEV)</th><th>Rolle</th><th>Abteilung</th><th>Urlaub (Tage)</th><th>Urlaubsmodus</th><th>Std/Tag</th><th>Soll</th><th>Berechtigungen</th><th>Status</th><th></th></tr></thead>
+  <thead><tr><th>Name</th><th>E-Mail</th><th>Personalnummer (DATEV)</th><th>Rolle</th><th>Abteilung</th><th>Urlaub (Tage)</th><th>Urlaubsmodus</th><th>Std/Tag</th><th>Soll h/Monat</th><th>Soll an?</th><th>Berechtigungen</th><th>Status</th><th></th></tr></thead>
   <tbody>
   {% for u in users %}
     <tr>
@@ -16,6 +16,7 @@
       <td>{{ u.urlaubsanspruch_tage }}</td>
       <td>{% if (u.urlaub_modus or 'konto') == 'auszahlung' %}Auszahlung (Ist/12){% else %}Konto{% endif %}</td>
       <td>{{ u.urlaub_stunden_pro_tag }}</td>
+      <td>{{ u.soll_stunden_monat if u.soll_stunden_monat is not none else '— (vom Zeitraum)' }}</td>
       <td>{% if u.hat_soll %}ja{% else %}nein (z. B. Minijobber){% endif %}</td>
       <td>{{ perm_summary.get(u.id, 'Standard') }}</td>
       <td>{{ 'aktiv' if u.aktiv else 'inaktiv' }}</td>
