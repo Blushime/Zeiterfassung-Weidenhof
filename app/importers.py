@@ -122,6 +122,10 @@ def import_stempeluhr_xlsx(path, hochgeladen_von_id, filename=None):
                     "meldung": f"Kein Mitarbeiter gefunden ({current['vorname']} {current['nachname']}, Nr. {pn!r}).",
                 })
                 continue
+            # Department aus der Stempeluhr übernehmen (z. B. "Minijobber"), wenn gesetzt
+            dept = cell(row, "department")
+            if dept and str(dept).strip() and (user.department or "") != str(dept).strip():
+                user.department = str(dept).strip()
 
             if hinein is None and hinaus is None:
                 # Kein Dienst — ggf. Abwesenheit (Urlaub/Krank/...) als eigener Eintrag speichern

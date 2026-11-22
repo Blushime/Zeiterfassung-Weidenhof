@@ -90,10 +90,9 @@ def _fill_user_from_form(user):
         user.urlaub_stunden_pro_tag = float(request.form.get("urlaub_stunden_pro_tag") or 8)
     except ValueError:
         user.urlaub_stunden_pro_tag = 8.0
-    try:
-        user.soll_wochenstunden = float(request.form.get("soll_wochenstunden") or 40)
-    except ValueError:
-        user.soll_wochenstunden = 40.0
+    # Soll-Stunden kommen pro Monat vom Abrechnungszeitraum (Admin) — pro Mitarbeiter nur an/aus
+    # (Minijobber z. B. aus). Legacy-Soll_wochenstunden bleibt als Fallback unangetastet.
+    user.hat_soll = request.form.get("hat_soll") == "1"
     user.aktiv = request.form.get("aktiv") == "1"
     # Berechtigungs-Overrides pro Mitarbeiter ("" = globale Einstellung aus den Settings)
     overrides = {}
@@ -180,6 +179,13 @@ def periods():
     return render_template("admin/periods.html", periods=items, now=datetime.now())
 
 
+def _parse_soll_stunden():
+    raw = (request.form.get("soll_stunden") or "").strip()
+    if not raw:
+        return None
+    return float(raw.replace(",", "."))
+
+
 @bp.route("/periods/new", methods=["POST"])
 @login_required
 @chef_required
@@ -187,8 +193,9 @@ def period_new():
     try:
         jahr = int(request.form.get("jahr", 0))
         monat = int(request.form.get("monat", 0))
+        soll = _parse_soll_stunden()
     except ValueError:
-        flash("Ungültiger Zeitraum.", "danger")
+        flash("Ungültiger Zeitraum / ungültige Soll-Stunden.", "danger")
         return redirect(url_for("admin.periods"))
     if not (1 <= monat <= 12) or jahr < 2000:
         flash("Ungültiger Zeitraum.", "danger")
@@ -196,10 +203,31 @@ def period_new():
     if period_for(jahr, monat):
         flash(f"Zeitraum {jahr}-{monat:02d} existiert bereits.", "info")
         return redirect(url_for("admin.periods"))
-    p = Abrechnungszeitraum(jahr=jahr, monat=monat, status="offen")
+    p = Abrechnungszeitraum(jahr=jahr, monat=monat, status="offen", soll_stunden=soll)
     db.session.add(p)
     db.session.commit()
-    flash(f"Zeitraum {p.name} angelegt.", "success")
+    flash(f"Zeitraum {p.name} angelegt (Soll: {soll} h/Monat)." if soll else f"Zeitraum {p.name} angelegt.", "success")
+    return redirect(url_for("admin.periods"))
+
+
+@bp.route("/periods/<int:pid>/edit", methods=["POST"])
+@login_required
+@chef_required
+def period_edit(pid):
+    """Soll-Stunden (Monat) eines Zeitraums nachträglich ändern (nur wenn nicht abgerechnet)."""
+    p = db.session.get(Abrechnungszeitraum, pid)
+    if p is None:
+        abort(404)
+    if p.status == "abgerechnet":
+        flash("Abgerechneter Zeitraum kann nicht mehr geändert werden.", "danger")
+        return redirect(url_for("admin.periods"))
+    try:
+        p.soll_stunden = _parse_soll_stunden()
+    except ValueError:
+        flash("Ungültige Soll-Stunden.", "danger")
+        return redirect(url_for("admin.periods"))
+    db.session.commit()
+    flash(f"Soll-Stunden für {p.name} gespeichert: {p.soll_stunden} h" if p.soll_stunden else f"Soll-Stunden für {p.name} entfernt (Fallback).", "success")
     return redirect(url_for("admin.periods"))
 
 

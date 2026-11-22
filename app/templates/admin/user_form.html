@@ -24,7 +24,11 @@
       <option value="auszahlung" {% if user and user.urlaub_modus == 'auszahlung' %}selected{% endif %}>Auszahlung: Zwölftel der gearbeiteten Monatsstunden (belastet nicht das Konto)</option>
     </select></label>
   <label>Urlaubsstunden pro Tag <input type="number" step="0.25" name="urlaub_stunden_pro_tag" value="{{ user.urlaub_stunden_pro_tag if user else 8 }}"></label>
-  <label>Soll-Stunden/Woche <input type="number" step="0.5" name="soll_wochenstunden" value="{{ user.soll_wochenstunden if user else 40 }}"></label>
+  <label>Soll-Stunden (pro Monat, am Abrechnungszeitraum eingestellt)
+    <select name="hat_soll">
+      <option value="1" {% if not user or user.hat_soll %}selected{% endif %}>ja — Mitarbeiter hat Soll</option>
+      <option value="0" {% if user and not user.hat_soll %}selected{% endif %}>nein — kein Soll (z. B. Minijobber: Saldo = Ist)</option>
+    </select></label>
   <label>Aktiv
     <select name="aktiv">
       <option value="1" {% if not user or user.aktiv %}selected{% endif %}>ja</option>

@@ -7,7 +7,8 @@ Team-Zeiterfassung (Web-App) mit **Urlaubsverwaltung**, **Stempeluhr-Excel-Impor
 
 - **Login & Rollen**: `admin`, `chef`, `mitarbeiter` — responsiv, funktioniert auf PC, Tablet und Handy
 - **Zeiterfassung**: Start/Stopp-Timer + manuelle Buchungen (Datum, Von–Bis, Kategorie, Bemerkung)
-- **Zeitkonto**: Ist vs. Soll (Soll = Soll-Wochenstunden des Mitarbeiters × Werktage/5) mit Gleitzeit-Saldo
+- **Zeitkonto**: Ist vs. Soll mit Gleitzeit-Saldo. **Soll-Stunden pro Monat** stellt der Admin am Abrechnungszeitraum ein
+  (Admin → Abrechnungszeiträume, z. B. 160 h/Monat); Mitarbeiter **ohne Soll** (z. B. Minijobber — Checkbox am Mitarbeiter) haben Saldo = Ist
 - **Abrechnungszeiträume**: anlegen, sperren (keine Änderungen mehr), abrechnen
 - **Stempeluhr-Import**: Excel-"Zeitbericht" hochladen — Mitarbeiter-Zuordnung über `Zweite Mitarbeiternr.`
   (Personalnummer) oder Name, Forward-Fill von Folgezeilen, Duplikatschutz (erneuter Import importiert nichts doppelt),

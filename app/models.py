@@ -22,7 +22,8 @@ class User(UserMixin, db.Model):
     # "konto" = Urlaub belastet das Urlaubskonto (Tage); "auszahlung" = Zwölftel der Monatsstunden wird ausgezahlt
     urlaub_modus = db.Column(db.String(20), nullable=False, default="konto", server_default="konto")
     urlaub_stunden_pro_tag = db.Column(db.Float, nullable=False, default=8.0, server_default=db.text("8.0"))
-    soll_wochenstunden = db.Column(db.Float, nullable=False, default=40.0)
+    soll_wochenstunden = db.Column(db.Float, nullable=False, default=40.0)  # nur Legacy-Fallback
+    hat_soll = db.Column(db.Boolean, nullable=False, default=True, server_default=db.text("1"))  # False = z. B. Minijobber: kein Soll
     aktiv = db.Column(db.Boolean, nullable=False, default=True)
     # JSON-Overrides für Berechtigungen, z. B. {"timer": "0", "manual": "1"} — leer = globale Einstellung
     perm_overrides = db.Column(db.Text, nullable=True)
@@ -58,6 +59,7 @@ class Abrechnungszeitraum(db.Model):
     jahr = db.Column(db.Integer, nullable=False)
     monat = db.Column(db.Integer, nullable=False)
     status = db.Column(db.String(20), nullable=False, default="offen")  # offen|gesperrt|abgerechnet
+    soll_stunden = db.Column(db.Float, nullable=True)  # Soll-Stunden für diesen Monat (vom Admin gesetzt)
     created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
     geschlossen_am = db.Column(db.DateTime, nullable=True)
 

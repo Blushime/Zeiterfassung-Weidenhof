@@ -165,6 +165,16 @@ def ist_minuten(user_id, period) -> int:
 
 
 def soll_minuten(user, period) -> int:
+    """Soll-Minuten für einen Monat.
+
+    - Mitarbeiter ohne Soll (hat_soll=False, z. B. Minijobber): 0 -> Saldo = Ist
+    - Sonst: Soll-Stunden des Abrechnungszeitraums (vom Admin pro Monat gesetzt)
+    - Fallback (Legacy), wenn am Zeitraum nichts gesetzt: Soll_wochenstunden/5 x Werktage
+    """
+    if not getattr(user, "hat_soll", True):
+        return 0
+    if getattr(period, "soll_stunden", None):
+        return int(round(period.soll_stunden * 60))
     return int(round(user.soll_wochenstunden / 5 * workdays_in_month(period.jahr, period.monat) * 60))
 
 
