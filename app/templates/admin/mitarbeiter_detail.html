@@ -1,0 +1,84 @@
+{% extends "base.html" %}
+{% block title %}Stände: {{ user.name }} — Admin{% endblock %}
+{% block content %}
+<h1>Stände: {{ user.name }}</h1>
+<p class="muted">
+  {{ user.email }} | Personalnummer: {{ user.personalnummer or '—' }} | Rolle: {{ user.role }} |
+  Abteilung: {{ user.department or '—' }} | Soll: {{ user.soll_wochenstunden }} h/Woche |
+  Urlaubsmodus: {% if urlaub_modus == 'auszahlung' %}Auszahlung (Ist/12){% else %}Konto{% endif %} |
+  {{ user.urlaub_stunden_pro_tag }} h/Urlaubstag
+</p>
+<p>
+  <a class="btn small" href="{{ url_for('admin.mitarbeiter_detail', user_id=user.id, jahr=(period.jahr if period.monat > 1 else period.jahr - 1), monat=(period.monat - 1 if period.monat > 1 else 12)) }}">&larr; {{ '%04d-%02d'|format(period.jahr if period.monat > 1 else period.jahr - 1, period.monat - 1 if period.monat > 1 else 12) }}</a>
+  <strong>{{ period.name }}</strong>
+  <a class="btn small" href="{{ url_for('admin.mitarbeiter_detail', user_id=user.id, jahr=(period.jahr if period.monat < 12 else period.jahr + 1), monat=(period.monat + 1 if period.monat < 12 else 1)) }}">{{ '%04d-%02d'|format(period.jahr if period.monat < 12 else period.jahr + 1, period.monat + 1 if period.monat < 12 else 1) }} &rarr;</a>
+  | <a class="btn small primary" href="{{ url_for('admin.report', user_id=user.id, jahr=jahr, monat=monat) }}">&#128196; Monatsbericht PDF</a>
+  | <a class="btn small" href="{{ url_for('admin.entries_overview', user_id=user.id, jahr=jahr, monat=monat) }}">Alle Buchungen mit Bearbeiten</a>
+</p>
+
+<div class="cards">
+  <div class="card">
+    <h2>Zeitkonto {{ period.name }}</h2>
+    <p class="big">{{ fmt_hhmm(ist) }} <span class="muted">Ist</span></p>
+    <p>{{ fmt_hhmm(soll) }} <span class="muted">Soll</span></p>
+    <p class="big {{ 'neg' if saldo < 0 else 'pos' }}">{{ fmt_hhmm(saldo) }} <span class="muted">Saldo / Gleitzeit</span></p>
+  </div>
+  <div class="card">
+    <h2>Urlaub {{ konto.jahr }}</h2>
+    {% if urlaub_modus == 'auszahlung' %}
+    <p>Modus: <strong>Auszahlung</strong> — Zwölftel der Monatsstunden (hier: {{ (ist/60/12)|round(2) }} h). Konto wird nicht belastet.</p>
+    {% else %}
+    <p class="big">{{ konto.rest }} <span class="muted">Resturlaub (Tage)</span></p>
+    <p>{{ konto.genommen }} genommen von {{ konto.anspruch }} Tagen</p>
+    {% endif %}
+  </div>
+</div>
+
+<h2>Zeitbuchungen {{ period.name }}</h2>
+<table>
+  <thead><tr><th>Datum</th><th>Von</th><th>Bis</th><th>Dauer</th><th>Kategorie</th><th>Quelle</th><th>Bemerkung</th></tr></thead>
+  <tbody>
+  {% for en in entries %}
+    <tr>
+      <td>{{ en.start.strftime('%d.%m.%Y') }}</td>
+      <td>{{ en.start.strftime('%H:%M') }}</td>
+      <td>{{ en.ende.strftime('%H:%M') if en.ende else 'läuft…' }}</td>
+      <td>{{ fmt_hhmm(en.dauer) }}</td>
+      <td>{{ en.kategorie }}</td>
+      <td>{{ en.quelle }}{% if en.origin %} ({{ en.origin }}){% endif %}</td>
+      <td>{{ en.bemerkung or '' }}</td>
+    </tr>
+  {% else %}
+    <tr><td colspan="7" class="muted">Keine Buchungen in diesem Zeitraum.</td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+
+<h2>Abwesenheiten {{ period.name }}</h2>
+<table>
+  <thead><tr><th>Datum</th><th>Typ</th><th>Quelle</th><th>Bemerkung</th></tr></thead>
+  <tbody>
+  {% for a in absenzen %}
+    <tr><td>{{ a.datum.strftime('%d.%m.%Y') }}</td><td>{{ a.typ }}</td><td>{{ a.quelle }}</td><td>{{ a.bemerkung or '' }}</td></tr>
+  {% else %}
+    <tr><td colspan="4" class="muted">Keine Abwesenheiten.</td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+
+<h2>Urlaubsanträge</h2>
+<table>
+  <thead><tr><th>Von</th><th>Bis</th><th>Tage</th><th>Status</th><th>Bemerkung</th></tr></thead>
+  <tbody>
+  {% for a in antraege %}
+    <tr>
+      <td>{{ a.von.strftime('%d.%m.%Y') }}</td><td>{{ a.bis.strftime('%d.%m.%Y') }}</td>
+      <td>{{ a.tage }}</td><td><span class="badge {{ a.status }}">{{ a.status }}</span></td><td>{{ a.bemerkung or '' }}</td>
+    </tr>
+  {% else %}
+    <tr><td colspan="5" class="muted">Keine Anträge.</td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+<p><a class="btn" href="{{ url_for('admin.users') }}">&larr; Zur Mitarbeiterliste</a></p>
+{% endblock %}

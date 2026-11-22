@@ -15,7 +15,7 @@
   <button type="submit" class="btn">Filtern</button>
 </form>
 <table>
-  <thead><tr><th>Datum</th><th>Mitarbeiter</th><th>Von</th><th>Bis</th><th>Dauer</th><th>Kategorie</th><th>Quelle</th><th>Bemerkung</th></tr></thead>
+  <thead><tr><th>Datum</th><th>Mitarbeiter</th><th>Von</th><th>Bis</th><th>Dauer</th><th>Kategorie</th><th>Quelle</th><th>Bemerkung</th><th></th></tr></thead>
   <tbody>
   {% for en in entries %}
     <tr>
@@ -27,9 +27,10 @@
       <td>{{ en.kategorie }}</td>
       <td>{{ en.quelle }}{% if en.origin %} ({{ en.origin }}){% endif %}</td>
       <td>{{ en.bemerkung or '' }}</td>
+      <td><a class="btn small" href="{{ url_for('admin.entry_edit', entry_id=en.id) }}">Bearbeiten</a></td>
     </tr>
   {% else %}
-    <tr><td colspan="8" class="muted">Keine Buchungen gefunden.</td></tr>
+    <tr><td colspan="9" class="muted">Keine Buchungen gefunden.</td></tr>
   {% endfor %}
   </tbody>
 </table>

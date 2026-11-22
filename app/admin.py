@@ -1,7 +1,7 @@
 import json
 import os
 import uuid
-from datetime import datetime
+from datetime import datetime, timedelta
 
 from flask import (
     Blueprint,
@@ -29,10 +29,12 @@ from .utils import (
     fmt_hhmm,
     get_or_create_period,
     ist_minuten,
+    parse_time,
     permission_enabled,
     period_bounds,
     period_for,
     soll_minuten,
+    urlaub_modus,
     urlaubskonto,
     user_perm_override,
 )
@@ -320,6 +322,52 @@ def urlaub_ablehnen(aid):
     return _set_urlaub_status(aid, "abgelehnt")
 
 
+# ---------- Mitarbeiter-Stände (alles, was der Mitarbeiter selbst sieht) ----------
+
+@bp.route("/mitarbeiter/<int:user_id>")
+@login_required
+@chef_required
+def mitarbeiter_detail(user_id):
+    user = db.session.get(User, user_id)
+    if user is None:
+        abort(404)
+    now = datetime.now()
+    jahr = request.args.get("jahr", type=int) or now.year
+    monat = request.args.get("monat", type=int) or now.month
+    period = period_for(jahr, monat) or get_or_create_period(datetime(jahr, monat, 1))
+    entries = entries_in_period(user.id, period)
+    s, e = period_bounds(period)
+    absenzen = (
+        Abwesenheit.query.filter(
+            Abwesenheit.user_id == user.id, Abwesenheit.datum >= s.date(), Abwesenheit.datum < e.date()
+        )
+        .order_by(Abwesenheit.datum)
+        .all()
+    )
+    ist = ist_minuten(user.id, period)
+    soll = soll_minuten(user, period)
+    konto = urlaubskonto(user, now.year)
+    antraege = (
+        Urlaubsantrag.query.filter_by(user_id=user.id).order_by(Urlaubsantrag.von.desc()).limit(20).all()
+    )
+    return render_template(
+        "admin/mitarbeiter_detail.html",
+        user=user,
+        period=period,
+        entries=entries,
+        absenzen=absenzen,
+        ist=ist,
+        soll=soll,
+        saldo=ist - soll,
+        konto=konto,
+        antraege=antraege,
+        urlaub_modus=urlaub_modus(user),
+        fmt_hhmm=fmt_hhmm,
+        jahr=jahr,
+        monat=monat,
+    )
+
+
 # ---------- Übersicht aller Buchungen ----------
 
 @bp.route("/entries")
@@ -347,6 +395,49 @@ def entries_overview():
         monat=monat,
         fmt_hhmm=fmt_hhmm,
     )
+
+
+# ---------- Buchung eines Mitarbeiters bearbeiten (Admin/Chef) ----------
+
+@bp.route("/entries/<int:entry_id>/edit", methods=["GET", "POST"])
+@login_required
+@chef_required
+def entry_edit(entry_id):
+    entry = db.session.get(TimeEntry, entry_id)
+    if entry is None:
+        abort(404)
+    p = period_for(entry.start.year, entry.start.month)
+    if request.method == "POST":
+        if p and p.gesperrt:
+            flash("Zeitraum gesperrt — Änderung nicht möglich.", "danger")
+            return redirect(url_for("admin.entries_overview", jahr=p.jahr, monat=p.monat, user_id=entry.user_id))
+        try:
+            d = datetime.strptime(request.form.get("datum", ""), "%Y-%m-%d").date()
+        except ValueError:
+            flash("Ungültiges Datum.", "danger")
+            return redirect(url_for("admin.entry_edit", entry_id=entry_id))
+        von = parse_time(request.form.get("von", ""))
+        bis = parse_time(request.form.get("bis", ""))
+        if von is None or bis is None:
+            flash("Ungültige Uhrzeit (Format HH:MM).", "danger")
+            return redirect(url_for("admin.entry_edit", entry_id=entry_id))
+        start = datetime.combine(d, von)
+        ende = datetime.combine(d, bis)
+        if ende <= start:
+            ende += timedelta(days=1)
+        entry.start = start
+        entry.ende = ende
+        entry.dauer_minuten = int((ende - start).total_seconds() // 60)
+        entry.kategorie = (request.form.get("kategorie") or "Allgemein").strip() or "Allgemein"
+        entry.bemerkung = (request.form.get("bemerkung") or "").strip() or None
+        try:
+            db.session.commit()
+            flash(f"Buchung von {entry.user.name} angepasst.", "success")
+        except Exception as e:
+            db.session.rollback()
+            flash(f"Änderung nicht möglich: {e}", "danger")
+        return redirect(url_for("admin.entries_overview", jahr=start.year, monat=start.month, user_id=entry.user_id))
+    return render_template("admin/entry_form.html", entry=entry)
 
 
 # ---------- Export ----------
