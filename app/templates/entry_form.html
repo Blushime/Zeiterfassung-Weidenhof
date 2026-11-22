@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% block title %}Buchung bearbeiten — Zeiterfassung{% endblock %}
+{% block content %}
+<h1>Buchung bearbeiten</h1>
+<div class="card narrow">
+  <form method="post">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <label>Datum <input type="date" name="datum" value="{{ entry.start.strftime('%Y-%m-%d') }}" required></label>
+    <label>Von <input type="time" name="von" value="{{ entry.start.strftime('%H:%M') }}" required></label>
+    <label>Bis <input type="time" name="bis" value="{{ entry.ende.strftime('%H:%M') if entry.ende else '' }}" required></label>
+    <label>Kategorie <input type="text" name="kategorie" value="{{ entry.kategorie }}"></label>
+    <label>Bemerkung <input type="text" name="bemerkung" value="{{ entry.bemerkung or '' }}"></label>
+    <button type="submit" class="btn primary">Speichern</button>
+    <a class="btn" href="{{ url_for('main.entries', jahr=entry.start.year, monat=entry.start.month) }}">Abbrechen</a>
+  </form>
+</div>
+{% endblock %}

@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block title %}Abwesenheiten — Admin{% endblock %}
+{% block content %}
+<h1>Abwesenheiten (aus Stempeluhr) — {{ period.name }}</h1>
+<form method="get" class="inline-form card">
+  <label>Mitarbeiter
+    <select name="user_id">
+      <option value="">— alle —</option>
+      {% for u in users %}
+      <option value="{{ u.id }}" {% if user_id == u.id %}selected{% endif %}>{{ u.name }}</option>
+      {% endfor %}
+    </select></label>
+  <label>Jahr <input type="number" name="jahr" value="{{ jahr }}"></label>
+  <label>Monat <input type="number" name="monat" min="1" max="12" value="{{ monat }}"></label>
+  <button type="submit" class="btn">Filtern</button>
+</form>
+<table>
+  <thead><tr><th>Datum</th><th>Mitarbeiter</th><th>Typ</th><th>Quelle</th><th>Bemerkung</th></tr></thead>
+  <tbody>
+  {% for a in absenzen %}
+    <tr>
+      <td>{{ a.datum.strftime('%d.%m.%Y') }}</td>
+      <td>{{ a.user.name }}</td>
+      <td>{{ a.typ }}</td>
+      <td>{{ a.quelle }}</td>
+      <td>{{ a.bemerkung or '' }}</td>
+    </tr>
+  {% else %}
+    <tr><td colspan="5" class="muted">Keine Abwesenheiten in diesem Zeitraum.</td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% endblock %}

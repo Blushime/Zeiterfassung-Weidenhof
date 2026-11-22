@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% block title %}Einstellungen — Admin{% endblock %}
+{% block content %}
+<h1>Einstellungen</h1>
+
+<form method="post">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+  <div class="card">
+    <h2>Berechtigungen (für alle Mitarbeiter)</h2>
+    {% for key, label in permissions.items() %}
+    <label>{{ label }}
+      <select name="perm_{{ key }}">
+        <option value="1" {% if values['perm_' ~ key] != '0' %}selected{% endif %}>aktiviert</option>
+        <option value="0" {% if values['perm_' ~ key] == '0' %}selected{% endif %}>deaktiviert</option>
+      </select></label>
+    {% endfor %}
+  </div>
+
+  <div class="card">
+    <h2>DATEV — Unternehmen online</h2>
+    <label>DATEV-Mandant <input type="text" name="datev_mandant" value="{{ values.datev_mandant }}"></label>
+    <label>DATEV Default-Lohnart <input type="text" name="datev_lohnart_default" value="{{ values.datev_lohnart_default or '1000' }}"></label>
+    <label>DATEV Lohnart Urlaubsauszahlung (für Mitarbeiter mit Modus „Auszahlung", = Ist/12) <input type="text" name="datev_lohnart_urlaub_auszahlung" value="{{ values.datev_lohnart_urlaub_auszahlung or '9000' }}"></label>
+    <label>Lohnarten-Mapping (JSON, z. B. <code>{"Allgemein": "1000", "Überstunden": "2010"}</code>)
+      <textarea name="lohnarten_mapping" rows="4">{{ values.lohnarten_mapping or '{}' }}</textarea></label>
+  </div>
+
+  <div class="card">
+    <h2>E-Mail-Benachrichtigung (SMTP) — z. B. neuer Urlaubsantrag an Chef/Admin</h2>
+    <label>SMTP-Host <input type="text" name="smtp_host" value="{{ values.smtp_host }}" placeholder="z. B. smtp.example.de (leer = deaktiviert)"></label>
+    <label>SMTP-Port <input type="text" name="smtp_port" value="{{ values.smtp_port or '587' }}"></label>
+    <label>SMTP-Benutzer <input type="text" name="smtp_user" value="{{ values.smtp_user }}"></label>
+    <label>SMTP-Passwort <input type="password" name="smtp_password" value="{{ values.smtp_password }}"></label>
+    <label>Absender-Adresse <input type="text" name="smtp_from" value="{{ values.smtp_from }}" placeholder="z. B. zeiterfassung@example.de"></label>
+    <label>TLS
+      <select name="smtp_tls">
+        <option value="1" {% if values.smtp_tls != '0' %}selected{% endif %}>ja (STARTTLS)</option>
+        <option value="0" {% if values.smtp_tls == '0' %}selected{% endif %}>nein</option>
+      </select></label>
+    <p class="muted">Ohne SMTP-Host werden keine E-Mails versendet (Funktion stumm deaktiviert).</p>
+  </div>
+
+  <button type="submit" class="btn primary">Alle Einstellungen speichern</button>
+</form>
+{% endblock %}

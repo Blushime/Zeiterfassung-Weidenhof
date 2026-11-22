@@ -1,0 +1,40 @@
+services:
+  app:
+    build: .
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      # SQLite -> 1 Worker (siehe Dockerfile); für PostgreSQL: DATABASE_URL setzen
+      - DATABASE_URL=${DATABASE_URL:-}
+    volumes:
+      - app-data:/app/instance      # SQLite-DB (persistent)
+      - app-uploads:/app/uploads    # hochgeladene Stempeluhr-Dateien
+    expose:
+      - "8000"
+    # Gesundheit: Login-Seite muss antworten
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request;urllib.request.urlopen('http://localhost:8000/login', timeout=5)"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      - DOMAIN=${DOMAIN:-localhost}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data       # Zertifikate (Let's Encrypt)
+      - caddy-config:/config
+    depends_on:
+      - app
+
+volumes:
+  app-data:
+  app-uploads:
+  caddy-data:
+  caddy-config:

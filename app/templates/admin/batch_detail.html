@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block title %}Import-Protokoll — Admin{% endblock %}
+{% block content %}
+<h1>Import-Protokoll: {{ batch.filename }}</h1>
+<p class="muted">{{ batch.hochgeladen_am.strftime('%d.%m.%Y %H:%M') }} von {{ batch.uploader.name if batch.uploader else '—' }} —
+  Status: {{ batch.status }} |
+  Zeilen: {{ batch.zeilen }}, importiert: {{ batch.importiert }}, doppelt: {{ batch.doppelt }},
+  Fehler: {{ batch.fehler }}, Abwesenheit: {{ batch.abwesenheit }}</p>
+<p><a class="btn" href="{{ url_for('admin.import_upload') }}">&larr; Zurück zum Import</a></p>
+<table>
+  <thead><tr><th>Zeile</th><th>Status</th><th>Mitarbeiter</th><th>Datum</th><th>Von</th><th>Bis</th><th>Meldung</th></tr></thead>
+  <tbody>
+  {% for row in log %}
+    <tr>
+      <td>{{ row.zeile }}</td>
+      <td>{{ row.status }}</td>
+      <td>{{ row.mitarbeiter or '' }}</td>
+      <td>{{ row.datum or '' }}</td>
+      <td>{{ row.start or '' }}</td>
+      <td>{{ row.ende or '' }}</td>
+      <td>{{ row.meldung or '' }}</td>
+    </tr>
+  {% else %}
+    <tr><td colspan="7" class="muted">Keine Protokolleinträge.</td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% endblock %}

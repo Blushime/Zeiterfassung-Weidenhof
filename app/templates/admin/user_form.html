@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% block title %}Mitarbeiter — Admin{% endblock %}
+{% block content %}
+<h1>{% if user %}Mitarbeiter bearbeiten: {{ user.name }}{% else %}Neuer Mitarbeiter{% endif %}</h1>
+<div class="card">
+<form method="post">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+  <label>Name <input type="text" name="name" value="{{ user.name if user else '' }}" required></label>
+  <label>E-Mail <input type="email" name="email" value="{{ user.email if user else '' }}" required></label>
+  <label>Passwort {% if user %}(leer lassen = unverändert){% endif %}
+    <input type="password" name="password" {% if not user %}required{% endif %}></label>
+  <label>Personalnummer (DATEV) <input type="text" name="personalnummer" value="{{ user.personalnummer if user and user.personalnummer else '' }}"></label>
+  <label>Rolle
+    <select name="role">
+      {% for r in ['mitarbeiter', 'chef', 'admin'] %}
+      <option value="{{ r }}" {% if user and user.role == r %}selected{% endif %}>{{ r }}</option>
+      {% endfor %}
+    </select></label>
+  <label>Abteilung <input type="text" name="department" value="{{ user.department if user and user.department else '' }}"></label>
+  <label>Urlaubsanspruch (Tage) <input type="number" step="0.5" name="urlaubsanspruch_tage" value="{{ user.urlaubsanspruch_tage if user else 30 }}"></label>
+  <label>Urlaubsmodus
+    <select name="urlaub_modus">
+      <option value="konto" {% if not user or (user.urlaub_modus or 'konto') == 'konto' %}selected{% endif %}>Urlaubskonto (Tage belastet Resturlaub)</option>
+      <option value="auszahlung" {% if user and user.urlaub_modus == 'auszahlung' %}selected{% endif %}>Auszahlung: Zwölftel der gearbeiteten Monatsstunden (belastet nicht das Konto)</option>
+    </select></label>
+  <label>Urlaubsstunden pro Tag <input type="number" step="0.25" name="urlaub_stunden_pro_tag" value="{{ user.urlaub_stunden_pro_tag if user else 8 }}"></label>
+  <label>Soll-Stunden pro Monat (dieser Mitarbeiter, leer = global vom Abrechnungszeitraum)
+    <input type="number" step="0.5" name="soll_stunden_monat" value="{{ user.soll_stunden_monat if user and user.soll_stunden_monat is not none else '' }}" placeholder="z. B. 160"></label>
+  <label>Hat Soll-Stunden?
+    <select name="hat_soll">
+      <option value="1" {% if not user or user.hat_soll %}selected{% endif %}>ja — Mitarbeiter hat Soll</option>
+      <option value="0" {% if user and not user.hat_soll %}selected{% endif %}>nein — kein Soll (z. B. Minijobber: Saldo = Ist)</option>
+    </select></label>
+  <label>Aktiv
+    <select name="aktiv">
+      <option value="1" {% if not user or user.aktiv %}selected{% endif %}>ja</option>
+      <option value="0" {% if user and not user.aktiv %}selected{% endif %}>nein</option>
+    </select></label>
+  <h2>Berechtigungen (individuell für diesen Mitarbeiter)</h2>
+  {% for key, label in permissions.items() %}
+  <label>{{ label }} — global aktuell: {{ 'aktiviert' if global_perms[key] else 'deaktiviert' }}
+    <select name="perm_{{ key }}">
+      <option value="" {% if perm_values.get(key, '') == '' %}selected{% endif %}>Standard (globale Einstellung)</option>
+      <option value="1" {% if perm_values.get(key) == '1' %}selected{% endif %}>erlaubt (Override)</option>
+      <option value="0" {% if perm_values.get(key) == '0' %}selected{% endif %}>verboten (Override)</option>
+    </select></label>
+  {% endfor %}
+  <button type="submit" class="btn primary">Speichern</button>
+  <a class="btn" href="{{ url_for('admin.users') }}">Abbrechen</a>
+</form>
+</div>
+{% endblock %}

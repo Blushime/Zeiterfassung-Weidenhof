@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block title %}Stempeluhr-Import — Admin{% endblock %}
+{% block content %}
+<h1>Stempeluhr-Import</h1>
+
+<div class="card">
+  <h2>Excel-Zeitbericht hochladen</h2>
+  <form method="post" enctype="multipart/form-data">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <label>Datei (.xlsx) <input type="file" name="datei" accept=".xlsx" required></label>
+    <button type="submit" class="btn primary">Importieren</button>
+  </form>
+  <p class="muted">Erwartetes Blatt: <code>Zeitbericht</code>. Mitarbeiter werden über
+    <code>Zweite Mitarbeiternr.</code> (Personalnummer) oder über den Namen zugeordnet.
+    Doppeltes Hochladen derselben Datei importiert nichts doppelt.</p>
+</div>
+
+<h2>Import-Verlauf</h2>
+<table>
+  <thead><tr><th>Datum</th><th>Datei</th><th>Hochgeladen von</th><th>Status</th><th>Zeilen</th><th>Importiert</th><th>Doppelt</th><th>Fehler</th><th>Abwesenheit</th><th></th></tr></thead>
+  <tbody>
+  {% for b in batches %}
+    <tr>
+      <td>{{ b.hochgeladen_am.strftime('%d.%m.%Y %H:%M') }}</td>
+      <td>{{ b.filename }}</td>
+      <td>{{ b.uploader.name if b.uploader else '—' }}</td>
+      <td>{{ b.status }}</td>
+      <td>{{ b.zeilen }}</td><td>{{ b.importiert }}</td><td>{{ b.doppelt }}</td><td>{{ b.fehler }}</td><td>{{ b.abwesenheit }}</td>
+      <td><a class="btn small" href="{{ url_for('admin.import_detail', batch_id=b.id) }}">Protokoll</a></td>
+    </tr>
+  {% else %}
+    <tr><td colspan="10" class="muted">Noch keine Importe.</td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% endblock %}

@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block title %}Mitarbeiter — Admin{% endblock %}
+{% block content %}
+<h1>Mitarbeiter</h1>
+<p><a class="btn primary" href="{{ url_for('admin.user_new') }}">+ Neuer Mitarbeiter</a></p>
+<table>
+  <thead><tr><th>Name</th><th>E-Mail</th><th>Personalnummer (DATEV)</th><th>Rolle</th><th>Abteilung</th><th>Urlaub (Tage)</th><th>Urlaubsmodus</th><th>Std/Tag</th><th>Soll h/Monat</th><th>Soll an?</th><th>Berechtigungen</th><th>Status</th><th></th></tr></thead>
+  <tbody>
+  {% for u in users %}
+    <tr>
+      <td>{{ u.name }}</td>
+      <td>{{ u.email }}</td>
+      <td>{{ u.personalnummer or '—' }}</td>
+      <td>{{ u.role }}</td>
+      <td>{{ u.department or '—' }}</td>
+      <td>{{ u.urlaubsanspruch_tage }}</td>
+      <td>{% if (u.urlaub_modus or 'konto') == 'auszahlung' %}Auszahlung (Ist/12){% else %}Konto{% endif %}</td>
+      <td>{{ u.urlaub_stunden_pro_tag }}</td>
+      <td>{{ u.soll_stunden_monat if u.soll_stunden_monat is not none else '— (vom Zeitraum)' }}</td>
+      <td>{% if u.hat_soll %}ja{% else %}nein (z. B. Minijobber){% endif %}</td>
+      <td>{{ perm_summary.get(u.id, 'Standard') }}</td>
+      <td>{{ 'aktiv' if u.aktiv else 'inaktiv' }}</td>
+      <td>
+        <a class="btn small" href="{{ url_for('admin.mitarbeiter_detail', user_id=u.id) }}">Stände</a>
+        <a class="btn small" href="{{ url_for('admin.user_edit', user_id=u.id) }}">Bearbeiten</a>
+        <a class="btn small" href="{{ url_for('admin.report', user_id=u.id) }}" title="Monatsbericht (aktueller Monat) als PDF">&#128196; PDF</a>
+        <form method="post" action="{{ url_for('admin.user_toggle', user_id=u.id) }}" style="display:inline">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <button class="btn small">{{ 'Deaktivieren' if u.aktiv else 'Aktivieren' }}</button>
+        </form>
+      </td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% endblock %}

@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+{% block title %}Abrechnungszeiträume — Admin{% endblock %}
+{% block content %}
+<h1>Abrechnungszeiträume</h1>
+
+<div class="card">
+  <h2>Neuen Zeitraum anlegen</h2>
+  <form method="post" action="{{ url_for('admin.period_new') }}" class="inline-form">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <label>Jahr <input type="number" name="jahr" value="{{ now.year }}" required></label>
+    <label>Monat <input type="number" name="monat" min="1" max="12" value="{{ now.month }}" required></label>
+    <label>Soll-Stunden (Monat) <input type="number" step="0.5" name="soll_stunden" placeholder="z. B. 160"></label>
+    <button type="submit" class="btn primary">Anlegen</button>
+  </form>
+  <p class="muted">Soll-Stunden gelten pro Monat für alle Mitarbeiter mit Soll (Minijobber ohne Soll sind ausgenommen). Leer = Fallback über Mitarbeiter-Einstellung.</p>
+</div>
+
+<table>
+  <thead><tr><th>Zeitraum</th><th>Soll-Stunden</th><th>Status</th><th>Angelegt am</th><th>Geschlossen am</th><th>Aktionen</th></tr></thead>
+  <tbody>
+  {% for p in periods %}
+    <tr>
+      <td>{{ p.name }}</td>
+      <td>
+        {% if p.status != 'abgerechnet' %}
+        <form method="post" action="{{ url_for('admin.period_edit', pid=p.id) }}" class="inline-form">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <input type="number" step="0.5" name="soll_stunden" value="{{ p.soll_stunden if p.soll_stunden is not none else '' }}" style="width:90px">
+          <button class="btn small">Speichern</button>
+        </form>
+        {% else %}
+        {{ p.soll_stunden if p.soll_stunden is not none else '—' }} h
+        {% endif %}
+      </td>
+      <td><span class="badge {{ p.status }}">{{ p.status }}</span></td>
+      <td>{{ p.created_at.strftime('%d.%m.%Y') }}</td>
+      <td>{{ p.geschlossen_am.strftime('%d.%m.%Y %H:%M') if p.geschlossen_am else '—' }}</td>
+      <td>
+        {% if p.status == 'offen' %}
+        <form method="post" action="{{ url_for('admin.period_sperren', pid=p.id) }}" style="display:inline">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <button class="btn small">Sperren</button>
+        </form>
+        {% elif p.status == 'gesperrt' %}
+        <form method="post" action="{{ url_for('admin.period_entsperren', pid=p.id) }}" style="display:inline">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <button class="btn small">Entsperren</button>
+        </form>
+        <form method="post" action="{{ url_for('admin.period_abrechnen', pid=p.id) }}" style="display:inline">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <button class="btn small primary">Abrechnen</button>
+        </form>
+        {% else %}
+        <span class="muted">abgerechnet</span>
+        {% endif %}
+      </td>
+    </tr>
+  {% else %}
+    <tr><td colspan="6" class="muted">Noch keine Zeiträume angelegt.</td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% endblock %}

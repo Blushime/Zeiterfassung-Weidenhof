@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+{% block title %}Export — Admin{% endblock %}
+{% block content %}
+<h1>Export</h1>
+
+<div class="card">
+  <h2>DATEV — Unternehmen online (Bewegungsdaten / Lohnarten)</h2>
+  <p class="muted">Semikolon-CSV mit Personalnummer, Abrechnungsmonat (JJJJMM), Lohnart, Stunden (Dezimalkomma).
+    Lohnarten-Mapping konfigurierbar unter <a href="{{ url_for('admin.settings') }}">Einstellungen</a>.
+    Feldfolge bitte mit dem Steuerberater abstimmen.</p>
+  {% if periods %}
+  <p>
+    {% for p in periods %}
+    <a class="btn small" href="{{ url_for('admin.export_datev', jahr=p.jahr, monat=p.monat) }}">DATEV {{ p.name }}</a>
+    {% endfor %}
+  </p>
+  {% else %}
+  <p class="muted">Zuerst einen Abrechnungszeitraum anlegen.</p>
+  {% endif %}
+</div>
+
+<div class="card">
+  <h2>CSV-Bericht aller Buchungen</h2>
+  {% if periods %}
+  <p>
+    {% for p in periods %}
+    <a class="btn small" href="{{ url_for('admin.export_entries', jahr=p.jahr, monat=p.monat) }}">CSV {{ p.name }} (alle)</a>
+    {% endfor %}
+  </p>
+  {% else %}
+  <p class="muted">Zuerst einen Abrechnungszeitraum anlegen.</p>
+  {% endif %}
+</div>
+{% endblock %}
