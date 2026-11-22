@@ -69,23 +69,65 @@ flask --app run.py db migrate -m "beschreibung der änderung"   # autogenerate
 flask --app run.py db upgrade                                    # ausführen
 ```
 
-## Produktion (öffentlich mit HTTPS)
+## Produktion (öffentlich mit HTTPS) — Docker Compose + Caddy
+
+Voraussetzungen: Linux-Server (VPS) mit Docker + Docker Compose, Ports 80/443 offen,
+**DNS-A-Record** von deiner Domain (z. B. `zeiterfassung.example.de`) zeigt auf die Server-IP.
 
 ```bash
-docker build -t zeiterfassung .
-docker run -p 8000:8000 -e SECRET_KEY="..." -v zeiterfassung-data:/app/instance zeiterfassung
+# 1. Repo auf den Server
+ git clone https://github.com/Blushime/Zeiterfassung-Weidenhof.git /srv/zeiterfassung
+cd /srv/zeiterfassung && git checkout main   # nach Merge des PR
+
+# 2. .env anlegen und ausfüllen (SECRET_KEY + DOMAIN)
+cp .env.example .env
+python3 -c "import secrets; print(secrets.token_hex(32))"   # -> in .env als SECRET_KEY eintragen
+# DOMAIN in .env auf deine echte Domain setzen
+
+# 3. starten (baut das Image, Caddy holt automatisch Let's-Encrypt-Zertifikat)
+docker compose up -d --build
+
+# 4. erster Admin + Migrationen (einmalig, im Container)
+docker compose exec app flask --app run.py db upgrade
+docker compose exec app flask --app run.py create-admin
 ```
 
-Davor einen Reverse Proxy mit automatischem HTTPS (z. B. Caddy):
+App erreichbar unter **https://DEINE-DOMAIN**. Lokal testen vorher mit `DOMAIN=localhost` → https://localhost.
 
-```caddy
-zeiterfassung.example.de {
-    reverse_proxy localhost:8000
-}
+### Updates (Code/Schema-Änderungen im Betrieb)
+
+```bash
+cd /srv/zeiterfassung
+git pull                                   # main aktualisieren
+# DB-Backup VOR Schema-Änderungen:
+docker compose stop app
+./scripts/backup-db.sh
+docker compose up -d --build               # neues Image
+docker compose exec app flask --app run.py db upgrade   # Migrationen (App läuft wieder, SQLite-Schema-Upgrade kurz stoppen besser:)
+# sicherer: Upgrade bei gestoppter App:
+#   docker compose stop app && docker compose exec app flask --app run.py db upgrade && docker compose start app
+docker compose start app 2>/dev/null || true
 ```
 
-Zusätzlich empfohlen: regelmäßige Backups der Datei `instance/zeiterfassung.db`, starke Passwörter,
-DSGVO-konforme Löschung von Konten auf Wunsch.
+**Rollback:** DB-Backup aus `backups/` zurückkopieren (`docker compose stop app`, Datei tauschen, `start`) + altes Image deployen (`docker tag` vor Updates vergeben, z. B. `zeiterfassung:v1`).
+
+### Backups (automatisch)
+
+`scripts/backup-db.sh` sichert die SQLite-DB **online** (konsistent, auch bei laufender App) nach `backups/`
+und behält die letzten 30. Als Cron (täglich 03:00 Uhr):
+
+```bash
+0 3 * * * /srv/zeiterfassung/scripts/backup-db.sh >> /var/log/zeiterfassung-backup.log 2>&1
+```
+
+Zusätzlich empfohlen: Backups regelmäßig extern wegkopieren (z. B. per `rclone`/`scp` auf anderen Server/Cloud),
+starke Passwörter, DSGVO-konforme Löschung von Konten auf Wunsch.
+
+### Hinweise
+
+- SQLite läuft mit **1 Gunicorn-Worker** (im Dockerfile fest eingestellt). Bei mehr gleichzeitigen Nutzern:
+  `DATABASE_URL=postgres://...` in `.env` setzen — kein Code-Änderung nötig.
+- `instance/` und `uploads/` liegen in Docker-Volumes (`app-data`, `app-uploads`) und überleben Container-Neustarts.
 
 ## Stempeluhr-Excel (Format)
 

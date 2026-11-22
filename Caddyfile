@@ -1,0 +1,8 @@
+# Reverse Proxy mit automatischem HTTPS (Let's Encrypt).
+# DOMAIN kommt aus der .env (z. B. zeiterfassung.example.de).
+# Voraussetzung: DNS-A-Record von DOMAIN zeigt auf diesen Server, Ports 80/443 offen.
+# Lokal testen: DOMAIN=localhost -> https://localhost (internes Zertifikat)
+{$DOMAIN:localhost} {
+	encode gzip
+	reverse_proxy app:8000
+}

@@ -8,8 +8,10 @@ venv/
 # Flask / App
 instance/
 uploads/
+backups/
 *.db
 .env
+.env.local
 
 # Tests
 .pytest_cache/
