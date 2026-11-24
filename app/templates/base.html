@@ -4,11 +4,16 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>{% block title %}Zeiterfassung{% endblock %}</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⏱️</text></svg>">
   <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+  <script>
+    // Theme vor dem Rendern setzen (kein Flackern), dann app.js
+    try { document.documentElement.setAttribute('data-theme', localStorage.getItem('theme') === 'dark' ? 'dark' : 'light'); } catch (e) {}
+  </script>
 </head>
-<body>
+<body class="{% block bodyclass %}{% endblock %}">
 <header class="topbar">
-  <a class="brand" href="{{ url_for('main.dashboard') }}">&#9201; Zeiterfassung</a>
+  <a class="brand" href="{{ url_for('main.dashboard') }}"><span class="mark">⏱</span> Zeiterfassung</a>
   {% if current_user.is_authenticated %}
   <nav class="nav">
     <a href="{{ url_for('main.dashboard') }}">Dashboard</a>
@@ -17,7 +22,8 @@
     {% if current_user.is_chef %}
     <a href="{{ url_for('admin.index') }}">Admin</a>
     {% endif %}
-    <span class="user">{{ current_user.name }}</span>
+    <span class="user">👤 {{ current_user.name }}</span>
+    <button class="theme-btn" type="button" title="Dunkles Design" aria-label="Design wechseln">🌙</button>
     <a href="{{ url_for('auth.logout') }}">Abmelden</a>
   </nav>
   {% endif %}
@@ -26,11 +32,13 @@
   {% with messages = get_flashed_messages(with_categories=true) %}
     {% if messages %}
       {% for category, message in messages %}
-        <div class="flash {{ category }}">{{ message }}</div>
+        <div class="flash {{ category }}" role="status">{{ message }}</div>
       {% endfor %}
     {% endif %}
   {% endwith %}
   {% block content %}{% endblock %}
+  <p class="footer">Zeiterfassung Weidenhof · lokal & datensparsam</p>
 </main>
+<script src="{{ url_for('static', filename='app.js') }}"></script>
 </body>
 </html>
