@@ -1,8 +1,9 @@
 {% extends "base.html" %}
 {% block title %}Anmelden — Zeiterfassung{% endblock %}
+{% block bodyclass %}auth{% endblock %}
 {% block content %}
 <div class="card narrow">
-  <h1>Anmelden</h1>
+  <h1>⏱️ Anmelden</h1>
   {% if user_count == 0 %}
   <p class="muted">Es existiert noch kein Konto. Lege zuerst eines an mit:<br>
     <code>flask create-admin</code></p>
