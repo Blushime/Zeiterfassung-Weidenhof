@@ -25,6 +25,11 @@ Team-Zeiterfassung (Web-App) mit **Urlaubsverwaltung**, **Stempeluhr-Excel-Impor
   Abwesenheitseinträge importiert (mit Duplikatschutz) und in Listen + PDF-Bericht angezeigt
 - **Monatsbericht als PDF**: Mitarbeiter laden ihren eigenen Bericht (Buchungen, Zeitkonto, Abwesenheiten, Urlaubskonto)
   unter `/report` herunter; Admin/Chef kann Berichte beliebiger Mitarbeiter erzeugen (Mitarbeiterliste → PDF-Symbol)
+- **Abwesenheiten verwalten (Admin/Chef)**: manuell anlegen (Von–Bis, Typ **Urlaub / Krank / Sonstiges** — wird auf die
+  Arbeitsplan-Tage des Mitarbeiters aufgeteilt), bearbeiten, löschen; Duplikate und gesperrte Zeiträume werden übersprungen.
+  Importierte Stempeluhr-Abwesenheiten bleiben sichtbar (Quelle „stempeluhr" vs. „manuell")
+- **Arbeitsplan pro Mitarbeiter**: Wochentage (Mo–So) als Checkboxen am Mitarbeiter — Urlaubs- und Krankheitstage zählen nur an diesen Tagen
+- **Einstellungen pro Mitarbeiter** übersichtlich gegliedert (Stammdaten / Urlaub / Arbeitszeit & Arbeitsplan / Berechtigungen)
 - **Admin-Sicht auf Mitarbeiter**: Admin/Chef sieht pro Mitarbeiter unter „Stände" alles, was der Mitarbeiter selbst sieht
   (Zeitkonto Ist/Soll/Saldo, Buchungen, Abwesenheiten, Urlaubskonto/Anträge, PDF-Link) — und kann in der Buchungsübersicht
   **fremde Buchungen bearbeiten** (gesperrte Zeiträume bleiben geschützt)

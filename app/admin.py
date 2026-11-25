@@ -1,7 +1,7 @@
 import json
 import os
 import uuid
-from datetime import datetime, timedelta
+from datetime import date, datetime, timedelta
 
 from flask import (
     Blueprint,
@@ -37,6 +37,7 @@ from .utils import (
     urlaub_modus,
     urlaubskonto,
     user_perm_override,
+    user_plan_days,
 )
 
 PERM_SHORT = {"timer": "Timer", "manual": "Manuell", "edit": "Zeitpassung"}
@@ -70,7 +71,8 @@ def index():
 def users():
     all_users = User.query.order_by(User.name).all()
     perm_summary = {u.id: _perm_summary(u) for u in all_users}
-    return render_template("admin/users.html", users=all_users, perm_summary=perm_summary)
+    plan_labels = {u.id: ", ".join(PLAN_NAMES[d] for d in sorted(user_plan_days(u))) for u in all_users}
+    return render_template("admin/users.html", users=all_users, perm_summary=perm_summary, plan_labels=plan_labels)
 
 
 def _fill_user_from_form(user):
@@ -100,6 +102,9 @@ def _fill_user_from_form(user):
             user.soll_stunden_monat = None
     else:
         user.soll_stunden_monat = None
+    # Arbeitsplan: Wochentage als Checkboxen (0=Mo .. 6=So); leer = Mo-Fr (Default)
+    plan = sorted({int(x) for x in request.form.getlist("plan") if x.strip().isdigit()})
+    user.arbeitsplan = ",".join(str(d) for d in plan) if plan else "0,1,2,3,4"
     user.aktiv = request.form.get("aktiv") == "1"
     # Berechtigungs-Overrides pro Mitarbeiter ("" = globale Einstellung aus den Settings)
     overrides = {}
@@ -553,6 +558,131 @@ def absenzen():
         jahr=jahr,
         monat=monat,
     )
+
+
+ABSENZ_TYPEN = ["Urlaub", "Krank", "Sonstiges"]
+PLAN_NAMES = ["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"]
+
+
+def _period_locked(d: date) -> bool:
+    p = period_for(d.year, d.month)
+    return bool(p and p.status in ("gesperrt", "abgerechnet"))
+
+
+@bp.route("/absenzen/new", methods=["GET", "POST"])
+@login_required
+@chef_required
+def absenz_new():
+    """Abwesenheit(en) manuell anlegen — Von/Bis wird auf die Arbeitsplan-Tage des Mitarbeiters aufgeteilt."""
+    users = User.query.filter_by(aktiv=True).order_by(User.name).all()
+    if request.method == "POST":
+        try:
+            user_id = int(request.form.get("user_id", 0))
+            von = datetime.strptime(request.form.get("von", ""), "%Y-%m-%d").date()
+            bis = datetime.strptime(request.form.get("bis", ""), "%Y-%m-%d").date()
+        except ValueError:
+            flash("Ungültige Eingabe (Mitarbeiter/Datum).", "danger")
+            return redirect(url_for("admin.absenz_new"))
+        user = db.session.get(User, user_id)
+        if user is None:
+            flash("Mitarbeiter nicht gefunden.", "danger")
+            return redirect(url_for("admin.absenz_new"))
+        if bis < von:
+            flash("Bis-Datum liegt vor Von-Datum.", "danger")
+            return redirect(url_for("admin.absenz_new"))
+        typ = (request.form.get("typ") or "Sonstiges").strip() or "Sonstiges"
+        if typ not in ABSENZ_TYPEN:
+            typ = "Sonstiges"
+        bemerkung = (request.form.get("bemerkung") or "").strip() or None
+        plan = user_plan_days(user)
+        created = skipped_locked = skipped_dup = 0
+        d = von
+        while d <= bis:
+            if d.weekday() in plan:  # nur Arbeitsplan-Tage zählen als Abwesenheitstag
+                if _period_locked(d):
+                    skipped_locked += 1
+                elif Abwesenheit.query.filter_by(user_id=user.id, datum=d).first():
+                    skipped_dup += 1
+                else:
+                    db.session.add(
+                        Abwesenheit(user_id=user.id, datum=d, typ=typ, quelle="manuell", bemerkung=bemerkung)
+                    )
+                    created += 1
+            d += timedelta(days=1)
+        db.session.commit()
+        msg = f"Abwesenheit '{typ}' für {user.name} angelegt: {created} Tag(e)."
+        if skipped_dup:
+            msg += f" {skipped_dup} bereits vorhanden (übersprungen)."
+        if skipped_locked:
+            msg += f" {skipped_locked} in gesperrten Zeiträumen (übersprungen)."
+        flash(msg, "success" if created else "warning")
+        return redirect(url_for("admin.absenzen", user_id=user.id, jahr=von.year, monat=von.month))
+    preselect = request.args.get("user_id", type=int)
+    return render_template(
+        "admin/absenz_form.html", users=users, absenz=None, typen=ABSENZ_TYPEN,
+        preselect=preselect, today=date.today().isoformat(),
+    )
+
+
+@bp.route("/absenzen/<int:aid>/edit", methods=["GET", "POST"])
+@login_required
+@chef_required
+def absenz_edit(aid):
+    a = db.session.get(Abwesenheit, aid)
+    if a is None:
+        abort(404)
+    if request.method == "POST":
+        if _period_locked(a.datum):
+            flash("Zeitraum gesperrt/abgerechnet — Änderung nicht möglich.", "danger")
+            return redirect(url_for("admin.absenzen", jahr=a.datum.year, monat=a.datum.month))
+        try:
+            new_datum = datetime.strptime(request.form.get("datum", ""), "%Y-%m-%d").date()
+        except ValueError:
+            flash("Ungültiges Datum.", "danger")
+            return redirect(url_for("admin.absenz_edit", aid=aid))
+        if _period_locked(new_datum):
+            flash("Zieldatum liegt in gesperrtem/abgerechnetem Zeitraum.", "danger")
+            return redirect(url_for("admin.absenz_edit", aid=aid))
+        typ = (request.form.get("typ") or "Sonstiges").strip() or "Sonstiges"
+        typ = typ if typ in ABSENZ_TYPEN else "Sonstiges"
+        # erst prüfen, dann gesammelt zuweisen (sonst kollidiert der Unique-Constraint beim Autoflush)
+        clash = Abwesenheit.query.filter(
+            Abwesenheit.user_id == a.user_id,
+            Abwesenheit.datum == new_datum,
+            Abwesenheit.quelle == a.quelle,
+            Abwesenheit.typ == typ,
+            Abwesenheit.id != a.id,
+        ).first()
+        if clash:
+            flash("An diesem Tag existiert bereits eine Abwesenheit mit gleichem Typ.", "warning")
+            return redirect(url_for("admin.absenz_edit", aid=aid))
+        a.datum = new_datum
+        a.typ = typ
+        a.bemerkung = (request.form.get("bemerkung") or "").strip() or None
+        db.session.commit()
+        flash("Abwesenheit gespeichert.", "success")
+        return redirect(url_for("admin.absenzen", user_id=a.user_id, jahr=a.datum.year, monat=a.datum.month))
+    return render_template(
+        "admin/absenz_form.html", users=[a.user], absenz=a, typen=ABSENZ_TYPEN, preselect=a.user_id, today=None
+    )
+
+
+@bp.route("/absenzen/<int:aid>/delete", methods=["POST"])
+@login_required
+@chef_required
+def absenz_delete(aid):
+    a = db.session.get(Abwesenheit, aid)
+    if a is None:
+        abort(404)
+    if _period_locked(a.datum):
+        flash("Zeitraum gesperrt/abgerechnet — Löschung nicht möglich.", "danger")
+    else:
+        jahr, monat, user_id = a.datum.year, a.datum.month, a.user_id
+        db.session.delete(a)
+        db.session.commit()
+        flash("Abwesenheit gelöscht.", "success")
+        return redirect(url_for("admin.absenzen", user_id=user_id, jahr=jahr, monat=monat))
+    return redirect(url_for("admin.absenzen", jahr=a.datum.year, monat=a.datum.month))
 
 
 # ---------- PDF-Monatsbericht (beliebiger Mitarbeiter) ----------

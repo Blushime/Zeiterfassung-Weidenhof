@@ -11,7 +11,7 @@
   <div class="card"><h2>Stempeluhr-Import</h2><p class="muted">Excel-Zeitbericht der Stempeluhr hochladen.</p><a class="btn primary" href="{{ url_for('admin.import_upload') }}">Excel importieren</a></div>
   <div class="card"><h2>Urlaubsanträge</h2><p class="muted">Anträge genehmigen oder ablehnen.</p><a class="btn" href="{{ url_for('admin.urlaub_all') }}">Anträge</a></div>
   <div class="card"><h2>Alle Buchungen</h2><p class="muted">Übersicht über alle Mitarbeiter.</p><a class="btn" href="{{ url_for('admin.entries_overview') }}">Buchungen</a></div>
-  <div class="card"><h2>Abwesenheiten</h2><p class="muted">Aus der Stempeluhr importierte Abwesenheiten (Urlaub, Krank, …).</p><a class="btn" href="{{ url_for('admin.absenzen') }}">Abwesenheiten</a></div>
+  <div class="card"><h2>Abwesenheiten</h2><p class="muted">Urlaub/Krank/Sonstiges — aus der Stempeluhr importiert oder manuell anlegen/bearbeiten.</p><a class="btn" href="{{ url_for('admin.absenzen') }}">Abwesenheiten</a></div>
   <div class="card"><h2>Export</h2><p class="muted">DATEV (Unternehmen online) und CSV-Berichte.</p><a class="btn primary" href="{{ url_for('admin.export') }}">Export</a></div>
 </div>
 {% endblock %}

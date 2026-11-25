@@ -1,7 +1,8 @@
 {% extends "base.html" %}
 {% block title %}Abwesenheiten — Admin{% endblock %}
 {% block content %}
-<h1>Abwesenheiten (aus Stempeluhr) — {{ period.name }}</h1>
+<h1>Abwesenheiten — {{ period.name }}</h1>
+<p><a class="btn primary" href="{{ url_for('admin.absenz_new', user_id=user_id or '') }}">+ Abwesenheit hinzufügen</a></p>
 <form method="get" class="inline-form card">
   <label>Mitarbeiter
     <select name="user_id">
@@ -15,18 +16,25 @@
   <button type="submit" class="btn">Filtern</button>
 </form>
 <table>
-  <thead><tr><th>Datum</th><th>Mitarbeiter</th><th>Typ</th><th>Quelle</th><th>Bemerkung</th></tr></thead>
+  <thead><tr><th>Datum</th><th>Mitarbeiter</th><th>Typ</th><th>Quelle</th><th>Bemerkung</th><th></th></tr></thead>
   <tbody>
   {% for a in absenzen %}
     <tr>
       <td>{{ a.datum.strftime('%d.%m.%Y') }}</td>
       <td>{{ a.user.name }}</td>
-      <td>{{ a.typ }}</td>
+      <td><span class="badge {% if a.typ == 'Krank' %}abgelehnt{% elif a.typ == 'Urlaub' %}genehmigt{% else %}offen{% endif %}">{{ a.typ }}</span></td>
       <td>{{ a.quelle }}</td>
       <td>{{ a.bemerkung or '' }}</td>
+      <td>
+        <a class="btn small" href="{{ url_for('admin.absenz_edit', aid=a.id) }}">Bearbeiten</a>
+        <form method="post" action="{{ url_for('admin.absenz_delete', aid=a.id) }}" style="display:inline">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <button class="btn small danger" type="submit" data-confirm="Abwesenheit am {{ a.datum.strftime('%d.%m.%Y') }} wirklich löschen?">Löschen</button>
+        </form>
+      </td>
     </tr>
   {% else %}
-    <tr><td colspan="5" class="muted">Keine Abwesenheiten in diesem Zeitraum.</td></tr>
+    <tr><td colspan="6" class="muted">Keine Abwesenheiten in diesem Zeitraum.</td></tr>
   {% endfor %}
   </tbody>
 </table>

@@ -28,8 +28,10 @@ def create_app(config_class=Config):
     app.register_blueprint(admin_bp, url_prefix="/admin")
 
     from .cli import register_cli
+    from .utils import user_plan_days
 
     register_cli(app)
+    app.add_template_global(user_plan_days, "user_plan_days")
 
     with app.app_context():
         # Schema per Migrationen (migrations/ existiert) — sonst Dev-Fallback create_all

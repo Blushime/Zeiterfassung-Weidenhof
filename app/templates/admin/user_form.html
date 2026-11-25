@@ -5,6 +5,8 @@
 <div class="card">
 <form method="post">
   <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+  <h2>Stammdaten</h2>
   <label>Name <input type="text" name="name" value="{{ user.name if user else '' }}" required></label>
   <label>E-Mail <input type="email" name="email" value="{{ user.email if user else '' }}" required></label>
   <label>Passwort {% if user %}(leer lassen = unverändert){% endif %}
@@ -17,6 +19,13 @@
       {% endfor %}
     </select></label>
   <label>Abteilung <input type="text" name="department" value="{{ user.department if user and user.department else '' }}"></label>
+  <label>Aktiv
+    <select name="aktiv">
+      <option value="1" {% if not user or user.aktiv %}selected{% endif %}>ja</option>
+      <option value="0" {% if user and not user.aktiv %}selected{% endif %}>nein</option>
+    </select></label>
+
+  <h2>Urlaub (Einstellungen pro Mitarbeiter)</h2>
   <label>Urlaubsanspruch (Tage) <input type="number" step="0.5" name="urlaubsanspruch_tage" value="{{ user.urlaubsanspruch_tage if user else 30 }}"></label>
   <label>Urlaubsmodus
     <select name="urlaub_modus">
@@ -24,6 +33,8 @@
       <option value="auszahlung" {% if user and user.urlaub_modus == 'auszahlung' %}selected{% endif %}>Auszahlung: Zwölftel der gearbeiteten Monatsstunden (belastet nicht das Konto)</option>
     </select></label>
   <label>Urlaubsstunden pro Tag <input type="number" step="0.25" name="urlaub_stunden_pro_tag" value="{{ user.urlaub_stunden_pro_tag if user else 8 }}"></label>
+
+  <h2>Arbeitszeit & Arbeitsplan</h2>
   <label>Soll-Stunden pro Monat (dieser Mitarbeiter, leer = global vom Abrechnungszeitraum)
     <input type="number" step="0.5" name="soll_stunden_monat" value="{{ user.soll_stunden_monat if user and user.soll_stunden_monat is not none else '' }}" placeholder="z. B. 160"></label>
   <label>Hat Soll-Stunden?
@@ -31,11 +42,17 @@
       <option value="1" {% if not user or user.hat_soll %}selected{% endif %}>ja — Mitarbeiter hat Soll</option>
       <option value="0" {% if user and not user.hat_soll %}selected{% endif %}>nein — kein Soll (z. B. Minijobber: Saldo = Ist)</option>
     </select></label>
-  <label>Aktiv
-    <select name="aktiv">
-      <option value="1" {% if not user or user.aktiv %}selected{% endif %}>ja</option>
-      <option value="0" {% if user and not user.aktiv %}selected{% endif %}>nein</option>
-    </select></label>
+  <fieldset style="border:1px solid var(--line); border-radius:10px; margin:.6rem 0; padding:.4rem .8rem .8rem;">
+    <legend style="font-size:.85rem; font-weight:600; color:var(--muted); padding:0 .3rem;">Arbeitsplan (an welchen Wochentagen arbeitet der Mitarbeiter?)</legend>
+    {% set plan = user_plan_days(user) if user else {0,1,2,3,4} %}
+    {% for d, name in [(0,'Mo'),(1,'Di'),(2,'Mi'),(3,'Do'),(4,'Fr'),(5,'Sa'),(6,'So')] %}
+    <label style="display:inline-flex; align-items:center; gap:.35rem; margin-right:1rem; font-weight:500; color:var(--ink);">
+      <input type="checkbox" name="plan" value="{{ d }}" {% if d in plan %}checked{% endif %} style="width:auto;"> {{ name }}
+    </label>
+    {% endfor %}
+    <p class="muted" style="margin:.4rem 0 0;">Urlaub- und Krankheitstage zählen nur an diesen Tagen.</p>
+  </fieldset>
+
   <h2>Berechtigungen (individuell für diesen Mitarbeiter)</h2>
   {% for key, label in permissions.items() %}
   <label>{{ label }} — global aktuell: {{ 'aktiviert' if global_perms[key] else 'deaktiviert' }}

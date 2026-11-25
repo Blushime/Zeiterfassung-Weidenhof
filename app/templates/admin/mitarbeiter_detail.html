@@ -55,13 +55,17 @@
 </table>
 
 <h2>Abwesenheiten {{ period.name }}</h2>
+<p><a class="btn small primary" href="{{ url_for('admin.absenz_new', user_id=user.id) }}">+ Abwesenheit hinzufügen</a></p>
 <table>
-  <thead><tr><th>Datum</th><th>Typ</th><th>Quelle</th><th>Bemerkung</th></tr></thead>
+  <thead><tr><th>Datum</th><th>Typ</th><th>Quelle</th><th>Bemerkung</th><th></th></tr></thead>
   <tbody>
   {% for a in absenzen %}
-    <tr><td>{{ a.datum.strftime('%d.%m.%Y') }}</td><td>{{ a.typ }}</td><td>{{ a.quelle }}</td><td>{{ a.bemerkung or '' }}</td></tr>
+    <tr>
+      <td>{{ a.datum.strftime('%d.%m.%Y') }}</td><td>{{ a.typ }}</td><td>{{ a.quelle }}</td><td>{{ a.bemerkung or '' }}</td>
+      <td><a class="btn small" href="{{ url_for('admin.absenz_edit', aid=a.id) }}">Bearbeiten</a></td>
+    </tr>
   {% else %}
-    <tr><td colspan="4" class="muted">Keine Abwesenheiten.</td></tr>
+    <tr><td colspan="5" class="muted">Keine Abwesenheiten.</td></tr>
   {% endfor %}
   </tbody>
 </table>

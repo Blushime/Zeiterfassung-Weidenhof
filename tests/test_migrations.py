@@ -40,6 +40,7 @@ def test_db_upgrade_creates_full_schema(tmp_path):
     assert "urlaub_stunden_pro_tag" in cols
     assert "hat_soll" in cols
     assert "soll_stunden_monat" in cols
+    assert "arbeitsplan" in cols
 
     with app.app_context():
         period_cols = [c["name"] for c in inspect(db.engine).get_columns("abrechnungszeitraeume")]

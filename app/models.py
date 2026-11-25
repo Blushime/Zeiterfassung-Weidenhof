@@ -25,6 +25,8 @@ class User(UserMixin, db.Model):
     soll_wochenstunden = db.Column(db.Float, nullable=False, default=40.0)  # nur Legacy-Fallback
     soll_stunden_monat = db.Column(db.Float, nullable=True)  # individueller Monats-Soll dieses Mitarbeiters (None = vom Zeitraum)
     hat_soll = db.Column(db.Boolean, nullable=False, default=True, server_default=db.text("1"))  # False = z. B. Minijobber: kein Soll
+    # Arbeitsplan: kommaseparierte Wochentage (0=Mo .. 6=So), z. B. "0,1,2,3,4"; leer = Mo-Fr
+    arbeitsplan = db.Column(db.Text, nullable=False, default="0,1,2,3,4", server_default="0,1,2,3,4")
     aktiv = db.Column(db.Boolean, nullable=False, default=True)
     # JSON-Overrides für Berechtigungen, z. B. {"timer": "0", "manual": "1"} — leer = globale Einstellung
     perm_overrides = db.Column(db.Text, nullable=True)
