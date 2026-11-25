@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+{% block title %}Abwesenheit — Admin{% endblock %}
+{% block content %}
+<h1>{% if absenz %}Abwesenheit bearbeiten ({{ absenz.user.name }}){% else %}Abwesenheit hinzufügen{% endif %}</h1>
+<div class="card narrow">
+  <form method="post">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    {% if absenz %}
+      <p class="muted">Mitarbeiter: <strong>{{ absenz.user.name }}</strong></p>
+      <label>Datum <input type="date" name="datum" value="{{ absenz.datum.strftime('%Y-%m-%d') }}" required></label>
+    {% else %}
+      <label>Mitarbeiter
+        <select name="user_id" required>
+          <option value="">— bitte wählen —</option>
+          {% for u in users %}
+          <option value="{{ u.id }}" {% if preselect == u.id %}selected{% endif %}>{{ u.name }}</option>
+          {% endfor %}
+        </select></label>
+      <label>Von <input type="date" name="von" value="{{ today }}" required></label>
+      <label>Bis <input type="date" name="bis" value="{{ today }}" required></label>
+      <p class="muted">Es werden nur die Tage des Arbeitsplans des Mitarbeiters als Abwesenheitstag angelegt.</p>
+    {% endif %}
+    <label>Typ
+      <select name="typ">
+        {% for t in typen %}
+        <option value="{{ t }}" {% if absenz and absenz.typ == t %}selected{% endif %}>{{ t }}</option>
+        {% endfor %}
+      </select></label>
+    <label>Bemerkung <input type="text" name="bemerkung" value="{{ absenz.bemerkung if absenz else '' }}"></label>
+    <button type="submit" class="btn primary">Speichern</button>
+    <a class="btn" href="{{ url_for('admin.absenzen') }}">Abbrechen</a>
+  </form>
+</div>
+{% endblock %}

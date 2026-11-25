@@ -120,6 +120,31 @@ def workdays_between(von: date, bis: date) -> int:
     return count
 
 
+DEFAULT_PLAN = {0, 1, 2, 3, 4}  # Mo-Fr
+
+
+def user_plan_days(user) -> set:
+    """Wochentage (0=Mo..6=So) laut individuellem Arbeitsplan des Mitarbeiters; leer -> Mo-Fr."""
+    raw = getattr(user, "arbeitsplan", None) or ""
+    try:
+        days = {int(x) for x in raw.split(",") if x.strip() != ""}
+    except ValueError:
+        days = set()
+    return days if days else set(DEFAULT_PLAN)
+
+
+def plan_days_between(user, von: date, bis: date) -> int:
+    """Tage im Bereich [von, bis], die laut Arbeitsplan des Mitarbeiters Arbeitstage sind."""
+    plan = user_plan_days(user)
+    count = 0
+    d = von
+    while d <= bis:
+        if d.weekday() in plan:
+            count += 1
+        d += timedelta(days=1)
+    return count
+
+
 def workdays_in_month(jahr: int, monat: int) -> int:
     last = monthrange(jahr, monat)[1]
     return workdays_between(date(jahr, monat, 1), date(jahr, monat, last))

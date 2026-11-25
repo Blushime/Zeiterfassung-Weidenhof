@@ -17,10 +17,10 @@ from .utils import (
     permission_enabled,
     period_bounds,
     period_for,
+    plan_days_between,
     saldo_minuten,
     soll_minuten,
     urlaubskonto,
-    workdays_between,
 )
 
 bp = Blueprint("main", __name__)
@@ -247,7 +247,7 @@ def urlaub():
         if bis < von:
             flash("Bis-Datum liegt vor Von-Datum.", "danger")
             return redirect(url_for("main.urlaub"))
-        tage = workdays_between(von, bis)
+        tage = plan_days_between(current_user, von, bis)  # zählt nur Tage laut individuellem Arbeitsplan
         antrag = Urlaubsantrag(
             user_id=current_user.id, von=von, bis=bis, tage=tage, bemerkung=bemerkung, status="beantragt"
         )
