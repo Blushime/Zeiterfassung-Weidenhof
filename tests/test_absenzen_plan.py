@@ -87,3 +87,12 @@ def test_worker_403_absenz_admin(client, worker, app):
     client.post("/login", data={"email": "max@test.de", "password": "pw"})
     assert client.get("/admin/absenzen/new").status_code == 403
     assert client.post("/admin/absenzen/new", data={}).status_code == 403
+
+
+def test_user_form_rendert_mit_arbeitsplan(client, admin_user, worker):
+    """Regression: Mitarbeiter-Formular (neu/bearbeiten) darf nicht 500 werfen (Jinja-Set-Literal)."""
+    client.post("/login", data={"email": "admin@test.de", "password": "pw"})
+    r = client.get("/admin/users/new")
+    assert r.status_code == 200 and r.get_data(as_text=True).count('name="plan"') == 7
+    r = client.get(f"/admin/users/{worker}/edit")
+    assert r.status_code == 200 and 'name="plan"' in r.get_data(as_text=True)

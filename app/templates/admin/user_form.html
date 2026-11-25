@@ -44,7 +44,7 @@
     </select></label>
   <fieldset style="border:1px solid var(--line); border-radius:10px; margin:.6rem 0; padding:.4rem .8rem .8rem;">
     <legend style="font-size:.85rem; font-weight:600; color:var(--muted); padding:0 .3rem;">Arbeitsplan (an welchen Wochentagen arbeitet der Mitarbeiter?)</legend>
-    {% set plan = user_plan_days(user) if user else {0,1,2,3,4} %}
+    {% set plan = user_plan_days(user) if user else [0,1,2,3,4] %}
     {% for d, name in [(0,'Mo'),(1,'Di'),(2,'Mi'),(3,'Do'),(4,'Fr'),(5,'Sa'),(6,'So')] %}
     <label style="display:inline-flex; align-items:center; gap:.35rem; margin-right:1rem; font-weight:500; color:var(--ink);">
       <input type="checkbox" name="plan" value="{{ d }}" {% if d in plan %}checked{% endif %} style="width:auto;"> {{ name }}
